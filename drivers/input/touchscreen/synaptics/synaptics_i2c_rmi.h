@@ -26,9 +26,7 @@
 #include <linux/i2c/synaptics_rmi.h>
 #include <linux/regulator/consumer.h>
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#include <linux/earlysuspend.h>
-#endif
+#include <linux/powersuspend.h>
 
 #if defined(CONFIG_INPUT_BOOSTER)
 //to enabled common touch booster. This must be included.
@@ -46,7 +44,7 @@
 
 /* feature define */
 #define TSP_BOOSTER	/* DVFS feature : TOUCH BOOSTER */
-#define USE_OPEN_CLOSE	/* Use when CONFIG_HAS_EARLYSUSPEND is disabled */
+#undef USE_OPEN_CLOSE
 #define REPORT_2D_W
 #define REDUCE_I2C_DATA_LENGTH
 #define USE_SENSOR_SLEEP
@@ -1079,7 +1077,7 @@ struct synaptics_rmi4_device_tree_data {
  * @rmi4_mod_info: device information
  * @regulator: pointer to associated regulator
  * @rmi4_io_ctrl_mutex: mutex for i2c i/o control
- * @early_suspend: instance to support early suspend power management
+ * @power_suspend: instance to support power suspend power management
  * @current_page: current page in sensor to acess
  * @button_0d_enabled: flag for 0d button support
  * @full_pm_cycle: flag for full power management cycle in early suspend stage
@@ -1118,9 +1116,8 @@ struct synaptics_rmi4_data {
 	struct mutex rmi4_reflash_mutex;
 	struct timer_list f51_finger_timer;
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	struct early_suspend early_suspend;
-#endif
+	struct power_suspend power_suspend;
+
 	const char *firmware_name;
 
 	struct completion init_done;
