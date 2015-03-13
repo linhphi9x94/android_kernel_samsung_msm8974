@@ -1754,12 +1754,8 @@ int ldi_fps(unsigned int input_fps)
 		pr_info("%s:current_ldi_fps_register_value=0x%x\n",__func__,current_ldi_fps);
 		pr_info("%s:dest_ldi_fps_register_value=0x%x\n",__func__,current_ldi_fps+dest_fps_delta);
 		current_ldi_fps = current_ldi_fps + dest_fps_delta;
-		if(current_ldi_fps < 0x35 || current_ldi_fps > 0x55)
-			panic("LDI FPS Check input_fps");
 		write_ldi_fps_cmds.cmd_desc[1].payload[1] = current_ldi_fps;
-		mipi_samsung_disp_send_cmd(PANEL_MTP_ENABLE, true);
 		mipi_samsung_disp_send_cmd(PANEL_LDI_FPS_CHANGE, true);
-		mipi_samsung_disp_send_cmd(PANEL_MTP_DISABLE, true);
 	} else {
 		pr_err("%s:Panel is off state!!\n",__func__);
 		return 0;
@@ -2134,30 +2130,27 @@ void mdss_dsi_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl, struct dsi_cmd_desc *c
 
 u32 mdss_dsi_cmd_receive(struct mdss_dsi_ctrl_pdata *ctrl, struct dsi_cmd_desc *cmd, int rlen)
 {
-    struct dcs_cmd_req cmdreq;
-	char *buf;
+        struct dcs_cmd_req cmdreq;
 
-	buf = kmalloc(sizeof(rlen), GFP_KERNEL);
-    memset(&cmdreq, 0, sizeof(cmdreq));
-    cmdreq.cmds = cmd;
-    cmdreq.cmds_cnt = 1;
-    cmdreq.flags = CMD_REQ_RX | CMD_REQ_COMMIT;
-	cmdreq.rbuf = buf;
-    cmdreq.rlen = rlen;
-    cmdreq.cb = NULL; /* call back */
-    /*
+        memset(&cmdreq, 0, sizeof(cmdreq));
+        cmdreq.cmds = cmd;
+        cmdreq.cmds_cnt = 1;
+        cmdreq.flags = CMD_REQ_RX | CMD_REQ_COMMIT;
+        cmdreq.rbuf = ctrl->rx_buf.data;
+        cmdreq.rlen = rlen;
+        cmdreq.cb = NULL; /* call back */
+        /*
 	 * This mutex is to sync up with dynamic FPS changes
 	 * so that DSI lockups shall not happen
 	 */
 	BUG_ON(msd.ctrl_pdata == NULL);
 	mutex_lock(&msd.ctrl_pdata->dfps_mutex);
-    mdss_dsi_cmdlist_put(ctrl, &cmdreq);
-    mutex_unlock(&msd.ctrl_pdata->dfps_mutex);
-    /*
-     * blocked here, untill call back called
-     */
-    kfree(buf);
-    return ctrl->rx_buf.len;
+        mdss_dsi_cmdlist_put(ctrl, &cmdreq);
+        mutex_unlock(&msd.ctrl_pdata->dfps_mutex);
+        /*
+         * blocked here, untill call back called
+         */
+        return ctrl->rx_buf.len;
 }
 
 static int samsung_nv_read(struct dsi_cmd_desc *desc, char *destBuffer,
@@ -2229,9 +2222,7 @@ static int mipi_samsung_read_nv_mem(struct mdss_panel_data *pdata, struct dsi_cm
 	int nv_read_cnt = 0;
 	int i = 0, j = 0;
 
-#if defined(CONFIG_FB_MSM_MDSS_SAMSUNG_OCTA_VIDEO_720P_PT_PANEL) \
-	|| defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OCTA_VIDEO_FULL_HD_PT_PANEL) \
-	|| defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OCTA_CMD_FULL_HD_PT_PANEL)
+#if defined(CONFIG_FB_MSM_MDSS_SAMSUNG_OCTA_VIDEO_720P_PT_PANEL)
 	j = 5; // do not repeat
 #elif defined(CONFIG_FB_MSM_MDSS_MAGNA_OCTA_VIDEO_720P_PANEL)\
 	||defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OCTA_VIDEO_HD_PANEL)
@@ -2533,7 +2524,8 @@ static int mipi_samsung_disp_send_cmd(
 			else
 				flag = 0;
 
-			msd.dstat.recent_bright_level = msd.dstat.bright_level;
+			if(msd.dstat.bright_level)
+				msd.dstat.recent_bright_level = msd.dstat.bright_level;
 #if defined(HBM_RE) || defined(CONFIG_HBM_PSRE)
 			if(msd.dstat.auto_brightness == 6) {
 				cmd_size = make_brightcontrol_hbm_set(msd.dstat.bright_level);
@@ -2544,8 +2536,13 @@ static int mipi_samsung_disp_send_cmd(
 				if(msd.dstat.hbm_mode)
 					mdss_dsi_cmds_send(msd.ctrl_pdata, hbm_hbm_off_elvss_cmds.cmd_desc, hbm_hbm_off_elvss_cmds.num_of_cmds, flag);
 #endif
+#if defined(CONFIG_MACH_KS01EUR)
+				msd.dstat.hbm_mode = 0;
+				cmd_size = make_brightcontrol_set(msd.dstat.bright_level);
+#else
 				cmd_size = make_brightcontrol_set(msd.dstat.bright_level);
 				msd.dstat.hbm_mode = 0;
+#endif
 			}
 #else
 			cmd_size = make_brightcontrol_set(msd.dstat.bright_level);
@@ -2614,7 +2611,8 @@ static int mipi_samsung_disp_send_cmd(
 #if defined(FORCE_500CD)
 		case PANEl_FORCE_500CD:
 			cmd_desc = brightness_packet;
-			msd.dstat.recent_bright_level = msd.dstat.bright_level;
+			if(msd.dstat.bright_level)
+				msd.dstat.recent_bright_level = msd.dstat.bright_level;
 			cmd_size = make_force_500cd_set(msd.dstat.bright_level);
 			break;
 #endif
@@ -3093,8 +3091,11 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 #if defined(CONFIG_DUAL_LCD)
 	mipi_samsung_disp_send_cmd(PANEL_BRIGHT_CTRL, true);
 #else
-	msd.dstat.bright_level = msd.dstat.recent_bright_level;
-	mipi_samsung_disp_send_cmd(PANEL_BRIGHT_CTRL, true);
+	if(msd.dstat.recent_bright_level)
+	{
+		msd.dstat.bright_level = msd.dstat.recent_bright_level;
+		mipi_samsung_disp_send_cmd(PANEL_BRIGHT_CTRL, true);
+	}
 #endif
 
 #if defined(CONFIG_DUAL_LCD)
@@ -3539,93 +3540,6 @@ static void mdss_panel_parse_te_params(struct device_node *np,
 	panel_info->te.refx100 = (!rc ? tmp : 6000);
 }
 #endif
-static int mdss_dsi_parse_dcs_cmds(struct device_node *np,
-		struct dsi_panel_cmds *pcmds, char *cmd_key, char *link_key)
-{
-	const char *data;
-	int blen = 0, len;
-	char *buf, *bp;
-	struct dsi_ctrl_hdr *dchdr;
-	int i, cnt;
-
-	data = of_get_property(np, cmd_key, &blen);
-	if (!data) {
-		pr_err("%s: failed, key=%s\n", __func__, cmd_key);
-		return -ENOMEM;
-	}
-
-	buf = kzalloc(sizeof(char) * blen, GFP_KERNEL);
-	if (!buf)
-		return -ENOMEM;
-
-	memcpy(buf, data, blen);
-
-	/* scan dcs commands */
-	bp = buf;
-	len = blen;
-	cnt = 0;
-	while (len > sizeof(*dchdr)) {
-		dchdr = (struct dsi_ctrl_hdr *)bp;
-		dchdr->dlen = ntohs(dchdr->dlen);
-		if (dchdr->dlen > len) {
-			pr_err("%s: dtsi cmd=%x error, len=%d",
-				__func__, dchdr->dtype, dchdr->dlen);
-			goto exit_free;
-		}
-		bp += sizeof(*dchdr);
-		len -= sizeof(*dchdr);
-		bp += dchdr->dlen;
-		len -= dchdr->dlen;
-		cnt++;
-	}
-
-	if (len != 0) {
-		pr_err("%s: dcs_cmd=%x len=%d error!",
-				__func__, buf[0], blen);
-		goto exit_free;
-	}
-
-	pcmds->cmds = kzalloc(cnt * sizeof(struct dsi_cmd_desc),
-						GFP_KERNEL);
-	if (!pcmds->cmds)
-		goto exit_free;
-
-	pcmds->cmd_cnt = cnt;
-	pcmds->buf = buf;
-	pcmds->blen = blen;
-
-	bp = buf;
-	len = blen;
-	for (i = 0; i < cnt; i++) {
-		dchdr = (struct dsi_ctrl_hdr *)bp;
-		len -= sizeof(*dchdr);
-		bp += sizeof(*dchdr);
-		pcmds->cmds[i].dchdr = *dchdr;
-		pcmds->cmds[i].payload = bp;
-		bp += dchdr->dlen;
-		len -= dchdr->dlen;
-	}
-
-	/*Set default link state to LP Mode*/
-	pcmds->link_state = DSI_LP_MODE;
-
-	if (link_key) {
-		data = of_get_property(np, link_key, NULL);
-		if (data && !strcmp(data, "dsi_hs_mode"))
-			pcmds->link_state = DSI_HS_MODE;
-		else
-			pcmds->link_state = DSI_LP_MODE;
-	}
-
-	pr_info("%s: dcs_cmd=%x len=%d, cmd_cnt=%d link_state=%d\n", __func__,
-		pcmds->buf[0], pcmds->blen, pcmds->cmd_cnt, pcmds->link_state);
-
-	return 0;
-
-exit_free:
-	kfree(buf);
-	return -ENOMEM;
-}
 
 static int mdss_panel_parse_dt(struct device_node *np,
 					struct mdss_dsi_ctrl_pdata *ctrl_pdata)
@@ -3635,6 +3549,7 @@ static int mdss_panel_parse_dt(struct device_node *np,
 	int rc, i, len;
 	const char *data;
 	static const char *bl_ctrl_type, *pdest;
+	static const char *on_cmds_state, *off_cmds_state;
 	struct mdss_panel_info *pinfo = &(ctrl_pdata->panel_data.panel_info);
 	bool fbc_enabled = false;
 
@@ -3972,11 +3887,29 @@ static int mdss_panel_parse_dt(struct device_node *np,
 		pinfo->fbc.target_bpp =
 			pinfo->bpp;
 	}
-	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->on_cmds,
-		"qcom,panel-on-cmds", "qcom,on-cmds-dsi-state");
 
-	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->off_cmds,
-		"qcom,panel-off-cmds", "qcom,off-cmds-dsi-state");
+	on_cmds_state = of_get_property(np,
+				"qcom,on-cmds-dsi-state", NULL);
+	if (!strncmp(on_cmds_state, "DSI_LP_MODE", 11)) {
+		ctrl_pdata->dsi_on_state = DSI_LP_MODE;
+	} else if (!strncmp(on_cmds_state, "DSI_HS_MODE", 11)) {
+		ctrl_pdata->dsi_on_state = DSI_HS_MODE;
+	} else {
+		pr_debug("%s: ON cmds state not specified. Set Default\n",
+							__func__);
+		ctrl_pdata->dsi_on_state = DSI_LP_MODE;
+	}
+
+	off_cmds_state = of_get_property(np, "qcom,off-cmds-dsi-state", NULL);
+	if (!strncmp(off_cmds_state, "DSI_LP_MODE", 11)) {
+		ctrl_pdata->dsi_off_state = DSI_LP_MODE;
+	} else if (!strncmp(off_cmds_state, "DSI_HS_MODE", 11)) {
+		ctrl_pdata->dsi_off_state = DSI_HS_MODE;
+	} else {
+		pr_debug("%s: ON cmds state not specified. Set Default\n",
+							__func__);
+		ctrl_pdata->dsi_off_state = DSI_LP_MODE;
+	}
 
 
 #if 1
@@ -4632,7 +4565,6 @@ int mdss_dsi_panel_init(struct device_node *node, struct mdss_dsi_ctrl_pdata *ct
 	mutex_init(&msd.lock);
 
 	msd.dstat.on = 0;
-	msd.dstat.recent_bright_level = 255;
 
 #if !defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OCTA_VIDEO_FULL_HD_PT_PANEL)\
 		&& !defined(CONFIG_FB_MSM_MDSS_MAGNA_OCTA_VIDEO_720P_PT_PANEL)\

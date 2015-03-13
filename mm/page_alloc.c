@@ -1402,14 +1402,13 @@ void free_hot_cold_page(struct page *page, int cold)
 	int wasMlocked = __TestClearPageMlocked(page);
 
 #ifdef CONFIG_SCFS_LOWER_PAGECACHE_INVALIDATION
-	/*
-	   struct scfs_sb_info *sbi;
-
-	   if (PageScfslower(page) || PageNocache(page)) {
-	   sbi = SCFS_S(page->mapping->host->i_sb);
-	   sbi->scfs_lowerpage_reclaim_count++;
-	   }
-	 */
+#if 1
+	{
+		extern u64 scfs_lowerpage_reclaim_count;
+		if (PageScfslower(page) || PageNocache(page))
+			scfs_lowerpage_reclaim_count++;
+	}
+#endif
 #endif
 
 	if (!free_pages_prepare(page, 0))
@@ -6305,10 +6304,6 @@ static struct trace_print_flags pageflag_names[] = {
 	{1UL << PG_readahead,           "PG_readahead"  },
 #ifdef CONFIG_SDP
 	{1UL << PG_sensitive,	"sensitive"	},
-#endif
-#ifdef CONFIG_SCFS_LOWER_PAGECACHE_INVALIDATION
-	{1UL << PG_scfslower, "scfslower"},
-	{1UL << PG_nocache,"nocache"},
 #endif
 };
 

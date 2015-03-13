@@ -229,8 +229,8 @@ int mdss_mdp_splash_cleanup(struct msm_fb_data_type *mfd,
 			}
 		}
 	}
-	if (rc || mdp5_data->handoff)
-	{
+
+	if (rc || mdp5_data->handoff) {
 		/* Add all the handed off pipes to the cleanup list */
 		mdss_mdp_handoff_cleanup_pipes(mfd, MDSS_MDP_PIPE_TYPE_RGB);
 		mdss_mdp_handoff_cleanup_pipes(mfd, MDSS_MDP_PIPE_TYPE_VIG);

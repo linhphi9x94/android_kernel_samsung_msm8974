@@ -1238,11 +1238,13 @@ static int mdss_dsi_blank(struct mdss_panel_data *pdata)
 			return ret;
 		}
         }
+#if !defined(FB_MSM_MIPI_SAMSUNG_OCTA_VIDEO_HD_PANEL)
 	if (pdata->panel_info.type == MIPI_VIDEO_PANEL &&
 			ctrl_pdata->off_cmds.link_state == DSI_LP_MODE) {
 		mdss_dsi_sw_reset(pdata);
 		mdss_dsi_host_init(pdata);
 	}
+#endif
 	mdss_dsi_op_mode_config(DSI_CMD_MODE, pdata);
 
 	if (pdata->panel_info.dynamic_switch_pending) {
@@ -1464,24 +1466,24 @@ static int mdss_dsi_event_handler(struct mdss_panel_data *pdata,
 	switch (event) {
 	case MDSS_EVENT_UNBLANK:
 		rc = mdss_dsi_on(pdata);
-		mdss_dsi_op_mode_config(pdata->panel_info.mipi.mode,
-							pdata);
-		if (ctrl_pdata->on_cmds.link_state == DSI_LP_MODE)
+		mdss_dsi_op_mode_config(pdata->panel_info.mipi.mode,pdata);
+		if (ctrl_pdata->dsi_on_state == DSI_LP_MODE)
 			rc = mdss_dsi_unblank(pdata);
 		break;
 	case MDSS_EVENT_PANEL_ON:
 		ctrl_pdata->ctrl_state |= CTRL_STATE_MDP_ACTIVE;
 		ctrl_pdata->mdp_tg_on = 1;
-		if (ctrl_pdata->on_cmds.link_state == DSI_HS_MODE)
+		if (ctrl_pdata->dsi_on_state == DSI_HS_MODE)
 			rc = mdss_dsi_unblank(pdata);
 		break;
 	case MDSS_EVENT_BLANK:
-		if (ctrl_pdata->off_cmds.link_state == DSI_HS_MODE)
+		if (ctrl_pdata->dsi_off_state == DSI_HS_MODE)
 			rc = mdss_dsi_blank(pdata);
 		break;
 	case MDSS_EVENT_PANEL_OFF:
 		ctrl_pdata->ctrl_state &= ~CTRL_STATE_MDP_ACTIVE;
-		if (ctrl_pdata->off_cmds.link_state == DSI_LP_MODE)
+//		ctrl_pdata->mdp_tg_on = 0;         /* Its not required here suggested by QCom */
+		if (ctrl_pdata->dsi_off_state == DSI_LP_MODE)
 			rc = mdss_dsi_blank(pdata);
 		rc = mdss_dsi_off(pdata);
 		break;
@@ -1512,12 +1514,12 @@ static int mdss_dsi_event_handler(struct mdss_panel_data *pdata,
 	case MDSS_EVENT_CONT_SPLASH_FINISH:
 
 #if defined(CONFIG_FB_MSM_MIPI_MAGNA_OCTA_CMD_HD_PT_PANEL)
-		if (ctrl_pdata->off_cmds.link_state == DSI_HS_MODE){
+		if (ctrl_pdata->dsi_off_state == DSI_HS_MODE){
 			ctrl_pdata->ctrl_state |= CTRL_STATE_PANEL_INIT;
                         rc = mdss_dsi_blank(pdata);
 		}
 #else
-		if (ctrl_pdata->off_cmds.link_state == DSI_LP_MODE)
+		if (ctrl_pdata->dsi_off_state == DSI_LP_MODE)
                     rc = mdss_dsi_blank(pdata);
 #endif
 		ctrl_pdata->ctrl_state &= ~CTRL_STATE_MDP_ACTIVE;
@@ -1570,7 +1572,7 @@ static int mdss_dsi_event_handler(struct mdss_panel_data *pdata,
 		&& !defined(CONFIG_FB_MSM_MDSS_MAGNA_OCTA_VIDEO_720P_PANEL)
 		ctrl_pdata->mdp_tg_on = 1;
 	/*Event is send only if cont_splash feature is enabled */
-		if (ctrl_pdata->off_cmds.link_state == DSI_HS_MODE) {
+		if (ctrl_pdata->dsi_off_state == DSI_HS_MODE) {
 			/* Panel is Enabled in Bootloader */
 			ctrl_pdata->ctrl_state |= CTRL_STATE_PANEL_INIT;
 			rc = mdss_dsi_blank(pdata);
@@ -1652,8 +1654,64 @@ static struct device_node *mdss_dsi_pref_prim_panel(
 static struct device_node *mdss_dsi_find_panel_of_node(
 		struct platform_device *pdev, char *panel_cfg)
 {
-	struct device_node *dsi_pan_node = NULL;
+	int len, i;
+	int ctrl_id = pdev->id - 1;
+	char panel_name[MDSS_MAX_PANEL_LEN];
+	char ctrl_id_stream[3] =  "0:";
+	char *stream = NULL, *pan = NULL;
+	struct device_node *dsi_pan_node = NULL, *mdss_node = NULL;
 
+	len = strlen(panel_cfg);
+#if defined(CONFIG_MACH_KS01EUR)
+	if (1) {
+#else
+	if(0){
+#endif
+		/* no panel cfg chg, parse dt */
+		pr_debug("%s:%d: no cmd line cfg present\n",
+			 __func__, __LINE__);
+		goto end;
+	} else {
+		if (ctrl_id == 1)
+			strlcpy(ctrl_id_stream, "1:", 3);
+
+		stream = strnstr(panel_cfg, ctrl_id_stream, len);
+		if (!stream) {
+			pr_err("controller config is not present\n");
+			goto end;
+		}
+		stream += 2;
+
+		pan = strnchr(stream, strlen(stream), ':');
+		if (!pan) {
+			strlcpy(panel_name, stream, MDSS_MAX_PANEL_LEN);
+		} else {
+			for (i = 0; (stream + i) < pan; i++)
+				panel_name[i] = *(stream + i);
+			panel_name[i] = 0;
+		}
+
+		pr_debug("%s:%d:%s:%s\n", __func__, __LINE__,
+			 panel_cfg, panel_name);
+
+		mdss_node = of_parse_phandle(pdev->dev.of_node,
+					     "qcom,mdss-mdp", 0);
+
+		if (!mdss_node) {
+			pr_err("%s: %d: mdss_node null\n",
+			       __func__, __LINE__);
+			return NULL;
+		}
+		dsi_pan_node = of_find_node_by_name(mdss_node,
+						    panel_name);
+		if (!dsi_pan_node) {
+			pr_err("%s: invalid pan node, selecting prim panel\n",
+			       __func__);
+			goto end;
+		}
+		return dsi_pan_node;
+	}
+end:
 	dsi_pan_node = mdss_dsi_pref_prim_panel(pdev);
 
 	return dsi_pan_node;
@@ -2103,12 +2161,17 @@ int dsi_panel_device_register(struct device_node *pan_node,
 	pinfo->panel_max_fps = mdss_panel_get_framerate(pinfo);
 	pinfo->panel_max_vtotal = mdss_panel_get_vtotal(pinfo);
 
-#if 1
+#if !defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OCTA_CMD_FULL_HD_PT_PANEL)
 	ctrl_pdata->disp_en_gpio = of_get_named_gpio(pan_node,
 		"qcom,enable-gpio", 0);
 #else
+#if defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OCTA_CMD_FULL_HD_PT_PANEL)
+	ctrl_pdata->disp_en_gpio = of_get_named_gpio(pan_node,
+		"qcom,platform-enable-gpio", 0);
+#else
 	ctrl_pdata->disp_en_gpio = of_get_named_gpio(ctrl_pdev->dev.of_node,
 		"qcom,platform-enable-gpio", 0);
+#endif
 #endif
 	pr_err("%s:%d, Disp_en_gpio (%d)",__func__, __LINE__,ctrl_pdata->disp_en_gpio );
 
@@ -2576,7 +2639,7 @@ int dsi_panel_device_register(struct device_node *pan_node,
 
 		mdss_dsi_clk_ctrl(ctrl_pdata, DSI_ALL_CLKS, 1);
 #if (defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OCTA_VIDEO_FULL_HD_PT_PANEL) || \
-	defined(CONFIG_FB_MSM_MDSS_MAGNA_OCTA_VIDEO_720P_PANEL))
+	defined(CONFIG_FB_MSM_MDSS_MAGNA_OCTA_VIDEO_720P_PANEL)) && !defined(CONFIG_MACH_KS01EUR)
 		ctrl_pdata->ctrl_state |= (CTRL_STATE_PANEL_INIT | CTRL_STATE_MDP_ACTIVE);
 #else
 		ctrl_pdata->ctrl_state |= CTRL_STATE_MDP_ACTIVE;

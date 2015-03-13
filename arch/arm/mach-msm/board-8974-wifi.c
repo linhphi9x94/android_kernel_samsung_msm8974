@@ -59,14 +59,7 @@ void *wlan_static_dhd_info_buf;
 #define ENABLE_4335BT_WAR
 #endif
 
-#if defined(CONFIG_BCM4339) || defined(CONFIG_BCM4339_MODULE)
-#ifdef CONFIG_SEC_H_PROJECT
-#define ENABLE_4339BT_WAR
-bool b0rev = 1;
-#endif
-#endif
-
-#if defined(ENABLE_4335BT_WAR) || defined(ENABLE_4339BT_WAR)
+#ifdef ENABLE_4335BT_WAR
 static int bt_off = 0;
 extern int bt_is_running;
 #endif /* ENABLE_4335BT_WAR */
@@ -85,10 +78,6 @@ enum {
     FPGA_GPIO_VPS_SOUND_EN,
 };
 #endif /* defined(CONFIG_SEC_KS01_PROJECT) */
-
-#ifdef CONFIG_SEC_H_PROJECT
-#define FPGA_GPIO_BT_EN 42
-#endif
 
 static void *brcm_wlan_mem_prealloc(int section, unsigned long size)
 {
@@ -315,18 +304,24 @@ static int brcm_wlan_power(int onoff)
 	printk(KERN_INFO"%s Enter: power %s\n", __func__, onoff ? "on" : "off");
 
 	if (onoff) {
-#if defined(ENABLE_4335BT_WAR) || defined(ENABLE_4339BT_WAR)
-		if(b0rev == true && gpio_get_value(FPGA_GPIO_BT_EN) == 0)
+#ifdef ENABLE_4335BT_WAR
+		if(b0rev == true && ice_gpiox_get(FPGA_GPIO_BT_EN) == 0)
 		{
 			bt_off = 1;
-			gpio_direction_output(FPGA_GPIO_BT_EN, 1);
+			ice_gpiox_set(FPGA_GPIO_BT_EN, 1);
 			printk("[brcm_wlan_power] Bluetooth Power On.\n");
 			msleep(50);
 		}
 		else {
 			bt_off = 0;
 		}
-#endif
+#endif /* ENABLE_4335BT_WAR */
+		/*
+		if (gpio_request(GPIO_WL_REG_ON, "WL_REG_ON"))
+		{
+			printk("Failed to request for WL_REG_ON\n");
+		}
+		*/
 
 #if defined(CONFIG_SEC_KS01_PROJECT) || defined(CONFIG_SEC_JACTIVE_PROJECT)
 		if (ice_gpiox_set(FPGA_GPIO_WLAN_EN, 1)) {
@@ -391,10 +386,10 @@ static int brcm_wlan_power(int onoff)
 		printk(KERN_INFO"WL_REG_ON off-step-2 : [%d]\n" , gpio_get_value(GPIO_WL_REG_ON));
 #endif
 	}
-#if defined(ENABLE_4335BT_WAR) || defined(ENABLE_4339BT_WAR)
+#ifdef ENABLE_4335BT_WAR
 	if(onoff && (bt_off == 1) && (bt_is_running == 0)) {
 		msleep(100);
-		gpio_direction_output(FPGA_GPIO_BT_EN, 0);
+		ice_gpiox_set(FPGA_GPIO_BT_EN, 0);
 		printk("[brcm_wlan_power] BT_REG_OFF.\n");
 	}
 #endif
