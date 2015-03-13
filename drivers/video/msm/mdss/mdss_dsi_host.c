@@ -1313,6 +1313,8 @@ static int mdss_dsi_cmd_dma_tx(struct mdss_dsi_ctrl_pdata *ctrl,
 	struct mdss_dsi_ctrl_pdata *mctrl = NULL;
 	struct mdss_panel_data *pdata;
 
+	pdata = &ctrl->panel_data;
+
 #ifdef DEBUG_CMD
 	int i;
 	bp = tp->data;
@@ -1323,8 +1325,6 @@ static int mdss_dsi_cmd_dma_tx(struct mdss_dsi_ctrl_pdata *ctrl,
 
 	pr_info("\n");
 #endif
-
-	pdata = &ctrl->panel_data;
 	bp = tp->data;
 
 	len = ALIGN(tp->len, 4);

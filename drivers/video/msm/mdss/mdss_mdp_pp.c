@@ -891,9 +891,8 @@ static int pp_vig_pipe_setup(struct mdss_mdp_pipe *pipe, u32 *op)
 			 * is a previously configured pipe need to re-configure
 			 * CSC matrix
 			 */
-			if (pipe->play_cnt == 0)
-				mdss_mdp_csc_setup(MDSS_MDP_BLOCK_SSPP, pipe->num, 1,
-									MDSS_MDP_CSC_YUV2RGB);
+			mdss_mdp_csc_setup(MDSS_MDP_BLOCK_SSPP, pipe->num, 1,
+					   MDSS_MDP_CSC_YUV2RGB);
 		}
 	}
 

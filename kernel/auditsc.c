@@ -1639,7 +1639,7 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
 
 		audit_log_format(ab,
 			  " a0=%lx a1=%lx a2=%lx a3=%lx items=%d"
-			  " ppid=%d ppcomm=%s pid=%d auid=%u uid=%u gid=%u"
+			  " ppid=%d pid=%d auid=%u uid=%u gid=%u"
 			  " euid=%u suid=%u fsuid=%u"
 			  " egid=%u sgid=%u fsgid=%u tty=%s ses=%u",
 			  context->argv[0],
@@ -1648,7 +1648,6 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
 			  context->argv[3],
 			  context->name_count,
 			  context->ppid,
-			  tsk->parent->comm,
 			  context->pid,
 			  tsk->loginuid,
 			  context->uid,

@@ -910,6 +910,7 @@ static int mdss_panel_parse_dt(struct device_node *np,
 	int rc, i, len;
 	const char *data;
 	static const char *pdest;
+	static const char *on_cmds_state, *off_cmds_state;
 	struct mdss_panel_info *pinfo = &(ctrl_pdata->panel_data.panel_info);
 	rc = of_property_read_u32(np, "qcom,mdss-dsi-panel-width", &tmp);
 	if (rc) {
@@ -1189,6 +1190,29 @@ static int mdss_panel_parse_dt(struct device_node *np,
 		mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->off_cmds,
 			"qcom,mdss-dsi-jdi-off-command", "qcom,mdss-dsi-off-command-state");
 	 }
+	// changes made as QCom suggestion
+	on_cmds_state = of_get_property(np, "qcom,mdss-dsi-on-command-state", NULL);
+
+        if (!strncmp(on_cmds_state, "dsi_lp_mode", 11)) {
+            ctrl_pdata->dsi_on_state = DSI_LP_MODE;
+        } else if (!strncmp(on_cmds_state, "dsi_hs_mode", 11)) {
+            ctrl_pdata->dsi_on_state = DSI_HS_MODE;
+        } else {
+             pr_debug("%s: ON cmds state not specified. Set Default\n", __func__);
+             ctrl_pdata->dsi_on_state = DSI_LP_MODE;
+        }
+
+        off_cmds_state = of_get_property(np, "qcom,mdss-dsi-off-command-state", NULL);
+
+        if (!strncmp(off_cmds_state, "dsi_lp_mode", 11)) {
+            ctrl_pdata->dsi_off_state = DSI_LP_MODE;
+        } else if (!strncmp(off_cmds_state, "dsi_hs_mode", 11)) {
+            ctrl_pdata->dsi_off_state = DSI_HS_MODE;
+       } else {
+            pr_debug("%s: ON cmds state not specified. Set Default\n", __func__);
+           ctrl_pdata->dsi_off_state = DSI_LP_MODE;
+       }
+        pr_err("[ on state : %d, off state : %d\n",ctrl_pdata->dsi_on_state ,ctrl_pdata->dsi_off_state );
 #else
 	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->on_cmds,
 		"qcom,mdss-dsi-sharp-on-command", "qcom,mdss-dsi-on-command-state");

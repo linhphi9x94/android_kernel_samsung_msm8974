@@ -155,46 +155,28 @@ else ifeq ($(CONFIG_SEC_LOCALE_JPN),y)
 	dtb-y	+= msm8974-sec-hltejpn-r08.dtb
 else
 	ifeq ($(CONFIG_MACH_H3GDUOS),y)
-		ifeq ($(CONFIG_MACH_H3GDUOS_CU),y)
-			dtb-y	+= msm8974-sec-h3gchncu-r07.dtb
-			dtb-y	+= msm8974-sec-h3gchncu-r09.dtb
-		else
-			dtb-y	+= msm8974-sec-h3gchnduos-r07.dtb
-			dtb-y	+= msm8974-sec-h3gchnduos-r08.dtb
-		endif
+		dtb-y	+= msm8974-sec-h3gchnduos-r03.dtb
+		dtb-y	+= msm8974-sec-h3gchnduos-r04.dtb
+		dtb-y	+= msm8974-sec-h3gchnduos-r05.dtb
+		dtb-y	+= msm8974-sec-h3gchnduos-r06.dtb
+		dtb-y	+= msm8974-sec-h3gchnduos-r07.dtb
+		dtb-y	+= msm8974-sec-h3gchnduos-r08.dtb
+		dtb-y	+= msm8974-sec-h3gchnduos-r09.dtb
 else
 	ifeq ($(CONFIG_MACH_JSGLTE_CHN_CMCC),y)
-		dtb-y	+= msm8974-sec-jsglte-r01.dtb
 		dtb-y	+= msm8974-sec-jsglte-r02.dtb
 		dtb-y	+= msm8974-sec-jsglte-r03.dtb
 		dtb-y	+= msm8974-sec-jsglte-r04.dtb
 	else
-		ifeq ($(CONFIG_MACH_H3G_CHN_CMCC),y)
-			dtb-y += msm8974-sec-hlte-chn-r06.dtb
-			dtb-y += msm8974-sec-hlte-chn-r07.dtb
-			dtb-y += msm8974-sec-hlte-chn-r09.dtb
-		else
-			ifeq ($(CONFIG_MACH_H3G_CHN_OPEN),y)
-				dtb-y += msm8974-sec-hlte-chn-r03.dtb
-				dtb-y += msm8974-sec-hlte-chn-r07.dtb
-				dtb-y += msm8974-sec-hlte-chn-r09.dtb
-			else
-				ifeq ($(CONFIG_MACH_HLTE_CHN_CMCC),y)
-					dtb-y += msm8974-sec-hlte-chn-r07.dtb
-					dtb-y += msm8974-sec-hlte-chn-r09.dtb
-				else
-					dtb-y += msm8974-sec-hlte-r05.dtb
-					dtb-y += msm8974-sec-hlte-r06.dtb
-					dtb-y += msm8974-sec-hlte-r07.dtb
-					dtb-y += msm8974-sec-hlte-r09.dtb
-				endif
-			endif
-		endif
+		dtb-y += msm8974-sec-hlte-r04.dtb
+		dtb-y += msm8974-sec-hlte-r05.dtb
+		dtb-y += msm8974-sec-hlte-r06.dtb
+		dtb-y += msm8974-sec-hlte-r07.dtb
+		dtb-y += msm8974-sec-hlte-r09.dtb
 	endif
   endif
 endif
 endif
-
 ifeq ($(CONFIG_SEC_FRESCO_PROJECT),y)
 ifeq ($(CONFIG_SEC_LOCALE_KOR),y)
 	dtb-y += msm8974-sec-frescoltekor-r07.dtb

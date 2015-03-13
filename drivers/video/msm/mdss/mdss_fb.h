@@ -255,8 +255,6 @@ struct msm_fb_data_type {
 	u32 dcm_state;
 	struct list_head proc_list;
 	u32 wait_for_kickoff;
-	struct ion_client *fb_ion_client;
-	struct ion_handle *fb_ion_handle;
 
 	int blank_mode;
 };
@@ -280,11 +278,11 @@ static inline void mdss_fb_update_notify_update(struct msm_fb_data_type *mfd)
 	}
 }
 #ifdef CONFIG_FB_MSM_CAMERA_CSC
-#if defined(CONFIG_SEC_KS01_PROJECT)|| defined(CONFIG_SEC_ATLANTIC_PROJECT)
+#if defined(CONFIG_MACH_KS01SKT) || defined(CONFIG_MACH_KS01EUR) || defined(CONFIG_MACH_KS01KTT) || defined(CONFIG_MACH_KS01LGT) || defined(CONFIG_SEC_ATLANTIC_PROJECT)
 extern u8 prev_csc_update;
 #endif
 extern u8 csc_update;
-#if !defined(CONFIG_SEC_KS01_PROJECT) && !defined(CONFIG_SEC_ATLANTIC_PROJECT)
+#if !defined(CONFIG_MACH_KS01SKT) && !defined(CONFIG_MACH_KS01EUR) && !defined(CONFIG_MACH_KS01KTT) && !defined(CONFIG_MACH_KS01LGT) && !defined(CONFIG_SEC_ATLANTIC_PROJECT)
 extern u8 pre_csc_update;
 #endif
 #endif

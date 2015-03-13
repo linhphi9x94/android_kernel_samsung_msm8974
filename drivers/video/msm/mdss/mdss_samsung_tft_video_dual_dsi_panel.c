@@ -443,7 +443,7 @@ static int mdss_dsi_parse_dcs_cmds(struct device_node *np,
 	pcmds->link_state = DSI_LP_MODE; /* default */
 
 	data = of_get_property(np, link_key, NULL);
-	if (!strncmp(data, "dsi_hs_mode", 11))
+	if (!strncmp(data, "DSI_HS_MODE", 11))
 		pcmds->link_state = DSI_HS_MODE;
 
 	pr_debug("%s: dcs_cmd=%x len=%d, cmd_cnt=%d link_state=%d\n", __func__,
@@ -566,6 +566,7 @@ static int mdss_panel_parse_dt(struct device_node *np,
 	int rc, i, len;
 	const char *data;
 	static const char *bl_ctrl_type, *pdest;
+	static const char *on_cmds_state, *off_cmds_state;
 	struct mdss_panel_info *pinfo = &(ctrl_pdata->panel_data.panel_info);
 
 	rc = of_property_read_u32_array(np, "qcom,mdss-pan-res", res, 2);
@@ -851,6 +852,30 @@ static int mdss_panel_parse_dt(struct device_node *np,
 		"samsung,panel-cabc-off-cmds", "qcom,off-cmds-dsi-state");
 	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->cabc_tune_cmds,
 		"samsung,panel-cabc-tune-cmds", "qcom,off-cmds-dsi-state");
+
+	on_cmds_state = of_get_property(np,
+				"qcom,on-cmds-dsi-state", NULL);
+	if (!strncmp(on_cmds_state, "DSI_LP_MODE", 11)) {
+		ctrl_pdata->dsi_on_state = DSI_LP_MODE;
+	} else if (!strncmp(on_cmds_state, "DSI_HS_MODE", 11)) {
+		ctrl_pdata->dsi_on_state = DSI_HS_MODE;
+	} else {
+		pr_debug("%s: ON cmds state not specified. Set Default\n",
+							__func__);
+		ctrl_pdata->dsi_on_state = DSI_LP_MODE;
+	}
+
+	off_cmds_state = of_get_property(np, "qcom,off-cmds-dsi-state", NULL);
+	if (!strncmp(off_cmds_state, "DSI_LP_MODE", 11)) {
+		ctrl_pdata->dsi_off_state = DSI_LP_MODE;
+	} else if (!strncmp(off_cmds_state, "DSI_HS_MODE", 11)) {
+		ctrl_pdata->dsi_off_state = DSI_HS_MODE;
+	} else {
+		pr_debug("%s: ON cmds state not specified. Set Default\n",
+							__func__);
+		ctrl_pdata->dsi_off_state = DSI_LP_MODE;
+	}
+
 
 	return 0;
 

@@ -4677,7 +4677,12 @@ int es705_core_probe(struct device *dev)
 #ifdef ES705_VDDCORE_MAX77826
 	struct regulator *es705_vdd_core = NULL;
 #endif
+
+#if defined(CONFIG_MACH_KLTE_KOR)
+	const char *fw_filename = "audience-es705-fw-kltekor.bin";
+#else
 	const char *fw_filename = "audience-es705-fw.bin";
+#endif
 #ifndef CONFIG_ARCH_MSM8226
 	const char *vs_filename = "audience-es705-vs.bin";
 #endif /* CONFIG_ARCH_MSM8226 */

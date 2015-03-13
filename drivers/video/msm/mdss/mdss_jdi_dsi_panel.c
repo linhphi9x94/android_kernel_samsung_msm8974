@@ -1191,87 +1191,6 @@ error2:
 	return -EINVAL;
 
 }
-static int mdss_dsi_parse_dcs_cmds(struct device_node *np,
-		struct dsi_panel_cmds *pcmds, char *cmd_key, char *link_key)
-{
-	const char *data;
-	int blen = 0, len;
-	char *buf, *bp;
-	struct dsi_ctrl_hdr *dchdr;
-	int i, cnt;
-
-	data = of_get_property(np, cmd_key, &blen);
-	if (!data) {
-		pr_err("%s: failed, key=%s\n", __func__, cmd_key);
-		return -ENOMEM;
-	}
-
-	buf = kzalloc(sizeof(char) * blen, GFP_KERNEL);
-	if (!buf)
-		return -ENOMEM;
-
-	memcpy(buf, data, blen);
-
-	/* scan dcs commands */
-	bp = buf;
-	len = blen;
-	cnt = 0;
-	while (len > sizeof(*dchdr)) {
-		dchdr = (struct dsi_ctrl_hdr *)bp;
-		dchdr->dlen = ntohs(dchdr->dlen);
-		if (dchdr->dlen > len) {
-			pr_err("%s: dtsi cmd=%x error, len=%d",
-				__func__, dchdr->dtype, dchdr->dlen);
-			return -ENOMEM;
-		}
-		bp += sizeof(*dchdr);
-		len -= sizeof(*dchdr);
-		bp += dchdr->dlen;
-		len -= dchdr->dlen;
-		cnt++;
-	}
-
-	if (len != 0) {
-		pr_err("%s: dcs_cmd=%x len=%d error!",
-				__func__, buf[0], blen);
-		kfree(buf);
-		return -ENOMEM;
-	}
-
-	pcmds->cmds = kzalloc(cnt * sizeof(struct dsi_cmd_desc),
-						GFP_KERNEL);
-	if (!pcmds->cmds){
-		kfree(buf);
-		return -ENOMEM;
-	}
-
-	pcmds->cmd_cnt = cnt;
-	pcmds->buf = buf;
-	pcmds->blen = blen;
-
-	bp = buf;
-	len = blen;
-	for (i = 0; i < cnt; i++) {
-		dchdr = (struct dsi_ctrl_hdr *)bp;
-		len -= sizeof(*dchdr);
-		bp += sizeof(*dchdr);
-		pcmds->cmds[i].dchdr = *dchdr;
-		pcmds->cmds[i].payload = bp;
-		bp += dchdr->dlen;
-		len -= dchdr->dlen;
-	}
-
-
-	data = of_get_property(np, link_key, NULL);
-	if (!strncmp(data, "dsi_hs_mode", 11))
-		pcmds->link_state = DSI_HS_MODE;
-	else
-		pcmds->link_state = DSI_LP_MODE;
-	pr_debug("%s: dcs_cmd=%x len=%d, cmd_cnt=%d link_state=%d\n", __func__,
-		pcmds->buf[0], pcmds->blen, pcmds->cmd_cnt, pcmds->link_state);
-
-	return 0;
-}
 
 static int mdss_panel_parse_dt(struct device_node *np,
 					struct mdss_dsi_ctrl_pdata *ctrl_pdata)
@@ -1281,6 +1200,7 @@ static int mdss_panel_parse_dt(struct device_node *np,
 	int rc, i, len;
 	const char *data;
 	static const char *bl_ctrl_type, *pdest;
+	static const char *on_cmds_state, *off_cmds_state;
 	struct mdss_panel_info *pinfo = &(ctrl_pdata->panel_data.panel_info);
 	bool fbc_enabled = false;
 
@@ -1580,11 +1500,28 @@ static int mdss_panel_parse_dt(struct device_node *np,
 			pinfo->bpp;
 	}
 
-	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->on_cmds,
-		"qcom,panel-on-cmds", "qcom,on-cmds-dsi-state");
+	on_cmds_state = of_get_property(np,
+				"qcom,on-cmds-dsi-state", NULL);
+	if (!strncmp(on_cmds_state, "DSI_LP_MODE", 11)) {
+		ctrl_pdata->dsi_on_state = DSI_LP_MODE;
+	} else if (!strncmp(on_cmds_state, "DSI_HS_MODE", 11)) {
+		ctrl_pdata->dsi_on_state = DSI_HS_MODE;
+	} else {
+		pr_debug("%s: ON cmds state not specified. Set Default\n",
+							__func__);
+		ctrl_pdata->dsi_on_state = DSI_LP_MODE;
+	}
 
-	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->off_cmds,
-		"qcom,panel-off-cmds", "qcom,off-cmds-dsi-state");
+	off_cmds_state = of_get_property(np, "qcom,off-cmds-dsi-state", NULL);
+	if (!strncmp(off_cmds_state, "DSI_LP_MODE", 11)) {
+		ctrl_pdata->dsi_off_state = DSI_LP_MODE;
+	} else if (!strncmp(off_cmds_state, "DSI_HS_MODE", 11)) {
+		ctrl_pdata->dsi_off_state = DSI_HS_MODE;
+	} else {
+		pr_debug("%s: ON cmds state not specified. Set Default\n",
+							__func__);
+		ctrl_pdata->dsi_off_state = DSI_LP_MODE;
+	}
 
 	mdss_samsung_parse_panel_cmd(np, &display_qcom_on_cmds,
 				"qcom,panel-on-cmds");
