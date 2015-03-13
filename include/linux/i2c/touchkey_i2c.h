@@ -92,7 +92,7 @@ extern int poweroff_charging;
 #define CYPRESS_AUTO_CAL	0X50
 #define CYPRESS_SLEEP		0X80
 #define CYPRESS_FW_ID_REG	0X05
-#define USE_OPEN_CLOSE
+#undef USE_OPEN_CLOSE
 #undef DO_NOT_USE_FUNC_PARAM
 #define KEYCODE_REG		0x00
 #endif
@@ -138,7 +138,7 @@ extern int poweroff_charging;
 #define NUM_OF_RETRY_UPDATE	5
 /*#define NUM_OF_KEY		4*/
 
-#define USE_OPEN_CLOSE
+#undef USE_OPEN_CLOSE
 #undef DO_NOT_USE_FUNC_PARAM
 
 
