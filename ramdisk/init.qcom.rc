@@ -236,7 +236,7 @@ on post-fs-data
     chmod 0660 /sys/class/sec/sec_touchkey/keypad_enable
     restorecon /sys/class/sec/sec_touchkey/keypad_enable
 # permission for Input Device(Touchkey).
-    chmod 0440 /sys/class/input/input2/enabled
+    chmod 0660 /sys/class/input/input2/enabled
     chown system system /sys/class/input/input2/enabled
     chown radio system /sys/class/sec/sec_touchkey/touch_sensitivity
     chown radio system /sys/class/sec/sec_touchkey/touchkey_firm_update
@@ -245,10 +245,22 @@ on post-fs-data
     chown system radio /sys/class/sec/sec_touchkey/boost_level
 
 # permission for Input Device(Wacom).
-    chmod 0440 /sys/class/input/input4/enabled
+    chmod 0660 /sys/class/input/input4/enabled
     chown system system /sys/class/input/input4/enabled
-    chmod 0660 /sys/class/input/input18/enabled
     chown system system /sys/class/input/input18/enabled
+
+# permissions for S-Pen
+    chmod 0660 /sys/class/input/input3/enabled
+    chown system system /sys/class/input/input3/enabled
+    chown system radio /sys/class/sec/sec_epen/epen_firm_update
+    chown system radio /sys/class/sec/sec_epen/epen_rotation
+    chown system radio /sys/class/sec/sec_epen/epen_hand
+    chown system radio /sys/class/sec/sec_epen/epen_reset
+    chown system radio /sys/class/sec/sec_epen/epen_reset_result
+    chown system radio /sys/class/sec/sec_epen/epen_checksum
+    chown system radio /sys/class/sec/sec_epen/epen_checksum_result
+    chown system radio /sys/class/sec/sec_epen/epen_saving_mode
+    chown system radio /sys/class/sec/sec_epen/boost_level
 
 # permissions for bluetooth.
     setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
@@ -485,6 +497,17 @@ service dhcpcd_bnep3 /system/bin/dhcpcd -BKLG
 service dhcpcd_bnep4 /system/bin/dhcpcd -BKLG
     disabled
     oneshot
+
+service macloader /system/bin/macloader
+    class main
+    oneshot
+
+on property:init.svc.macloader=stopped
+    chown system root /data/.cid.info
+    chmod 0664 /data/.cid.info
+    chown system root /data/.rev
+    chmod 0664 /data/.rev
+# end of wifi
 
 service wifi-crda /system/bin/sh /system/etc/init.crda.sh
    class late_start

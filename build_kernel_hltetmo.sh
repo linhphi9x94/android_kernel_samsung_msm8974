@@ -6,7 +6,7 @@ export USE_SEC_FIPS_MODE=true
 echo "kerneldir = $KERNELDIR"
 echo "ramfs_source = $RAMFS_SOURCE"
 
-RAMFS_TMP="/tmp/arter97-e330-ramdisk"
+RAMFS_TMP="/tmp/arter97-hlte-ramdisk"
 
 echo "ramfs_tmp = $RAMFS_TMP"
 cd $KERNELDIR
@@ -17,19 +17,29 @@ else
 	echo "Compiling kernel"
 	cp defconfig .config
 scripts/configcleaner "
-CONFIG_MACH_KS01SKT
-CONFIG_MACH_KS01KTT
-CONFIG_MACH_KS01LGT
+CONFIG_MACH_HLTEEUR
+CONFIG_MACH_HLTETMO
+CONFIG_I2C_ACTUATOR
+CONFIG_INSIDESECURE_VPNCLIENT
 CONFIG_WLAN_REGION_CODE
-CONFIG_LGUIWLAN
+CONFIG_EXTRA_FIRMWARE
+CONFIG_BCM2079X_NFC_I2C
+CONFIG_NFC_PN547
+CONFIG_NFC_PN547_PMC8974_CLK_REQ
+CONFIG_NFC_PN547_8226_USE_BBCLK2
 "
-	echo "
-CONFIG_MACH_KS01SKT=y
-# CONFIG_MACH_KS01KTT is not set
-# CONFIG_MACH_KS01LGT is not set
-CONFIG_WLAN_REGION_CODE=201
-# CONFIG_LGUIWLAN is not set
-" >> .config
+	echo '
+# CONFIG_MACH_HLTEEUR is not set
+CONFIG_MACH_HLTETMO=y
+# CONFIG_I2C_ACTUATOR is not set
+CONFIG_INSIDESECURE_VPNCLIENT=y
+CONFIG_EXTRA_FIRMWARE="audience-es325-fw-h-tmo.bin"
+# CONFIG_BCM2079X_NFC_I2C is not set
+CONFIG_NFC_PN547=y
+CONFIG_NFC_PN547_PMC8974_CLK_REQ=y
+# CONFIG_NFC_PN547_8226_USE_BBCLK2 is not set
+CONFIG_WLAN_REGION_CODE=402
+' >> .config
 	make oldconfig
 	make "$@" || exit 1
 fi
@@ -44,8 +54,6 @@ cp -ax $RAMFS_SOURCE $RAMFS_TMP
 cd $RAMFS_TMP
 
 find . -name '*.sh' -exec chmod 755 {} \;
-
-sed -i -e 's/DEVICE/SHV-E330S/g' default.prop
 
 $KERNELDIR/ramdisk_fix_permissions.sh 2>/dev/null
 
@@ -64,12 +72,12 @@ echo "Making new boot image"
 gcc -w -s -pipe -O2 -o tools/dtbtool/dtbtool tools/dtbtool/dtbtool.c
 tools/dtbtool/dtbtool -s 2048 -o arch/arm/boot/dt.img -p scripts/dtc/ arch/arm/boot/
 gcc -w -s -pipe -O2 -Itools/libmincrypt -o tools/mkbootimg/mkbootimg tools/libmincrypt/*.c tools/mkbootimg/mkbootimg.c
-tools/mkbootimg/mkbootimg --kernel $KERNELDIR/arch/arm/boot/zImage --dt $KERNELDIR/arch/arm/boot/dt.img --ramdisk $RAMFS_TMP.cpio.lzo --cmdline 'console=null androidboot.hardware=qcom user_debug=23 msm_rtb.filter=0x37 ehci-hcd.park=3 enforcing=0' --base 0x00000000 --pagesize 2048 --kernel_offset 0x00008000 --ramdisk_offset 0x02000000 --tags_offset 0x01e00000 --second_offset 0x00f00000 -o $KERNELDIR/e330s.img
-echo -n "SEANDROIDENFORCE" >> e330s.img
+tools/mkbootimg/mkbootimg --kernel $KERNELDIR/arch/arm/boot/zImage --dt $KERNELDIR/arch/arm/boot/dt.img --ramdisk $RAMFS_TMP.cpio.lzo --cmdline 'console=null androidboot.hardware=qcom user_debug=23 msm_rtb.filter=0x37 ehci-hcd.park=3 enforcing=0' --base 0x00000000 --pagesize 2048 --kernel_offset 0x00008000 --ramdisk_offset 0x02000000 --tags_offset 0x01e00000 --second_offset 0x00f00000 -o $KERNELDIR/boot.img
+echo -n "SEANDROIDENFORCE" >> boot.img
 if [ "${1}" = "CC=\$(CROSS_COMPILE)gcc" ] ; then
-	dd if=/dev/zero bs=$((20971520-$(stat -c %s e330s.img))) count=1 >> e330s.img
+	dd if=/dev/zero bs=$((11534336-$(stat -c %s boot.img))) count=1 >> boot.img
 fi
 
 echo "done"
-ls -al e330s.img
+ls -al boot.img
 echo ""
