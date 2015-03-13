@@ -2103,12 +2103,17 @@ int dsi_panel_device_register(struct device_node *pan_node,
 	pinfo->panel_max_fps = mdss_panel_get_framerate(pinfo);
 	pinfo->panel_max_vtotal = mdss_panel_get_vtotal(pinfo);
 
-#if 1
+#if !defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OCTA_CMD_FULL_HD_PT_PANEL)
+	ctrl_pdata->disp_en_gpio = of_get_named_gpio(pan_node,
+		"qcom,enable-gpio", 0);
+#else
+#if defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OCTA_CMD_FULL_HD_PT_PANEL)
 	ctrl_pdata->disp_en_gpio = of_get_named_gpio(pan_node,
 		"qcom,enable-gpio", 0);
 #else
 	ctrl_pdata->disp_en_gpio = of_get_named_gpio(ctrl_pdev->dev.of_node,
 		"qcom,platform-enable-gpio", 0);
+#endif
 #endif
 	pr_err("%s:%d, Disp_en_gpio (%d)",__func__, __LINE__,ctrl_pdata->disp_en_gpio );
 

@@ -1316,6 +1316,18 @@ int mdss_mdp_overlay_kickoff(struct msm_fb_data_type *mfd,
 	}
 
 	mutex_lock(&mdp5_data->ov_lock);
+	ctl->bw_pending = 0;
+	if (mfd->panel_info->type == DTV_PANEL) {
+		ret = mdss_mdp_overlay_start(mfd);
+		if (ret) {
+			pr_err("unable to start overlay %d (%d)\n",
+						mfd->index, ret);
+			mutex_unlock(&mdp5_data->ov_lock);
+			if (ctl->shared_lock)
+				mutex_unlock(ctl->shared_lock);
+			return ret;
+		}
+	}
 	mutex_lock(&mdp5_data->list_lock);
 
 	/*
