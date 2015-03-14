@@ -38,6 +38,8 @@
 #include "msm-pcm-q6-v2.h"
 #include "msm-pcm-routing-v2.h"
 
+#undef DUALWAVE_ENABLE
+
 #ifdef DUALWAVE_ENABLE
 #include <linux/syscalls.h>
 #include <asm/uaccess.h>
