@@ -13,10 +13,11 @@ on early-boot
     chmod 0600 /sys/class/sec/Multiverse/Brane
 
 # efs
-    chmod 0660 /dev/block/mmcblk0p11
-    chown system system /dev/block/mmcblk0p11
+    chmod 0660 /dev/block/mmcblk0p12
+    chown system system /dev/block/mmcblk0p12
 
 on init
+    mkdir /preload 0771 system system
 #Private Mode
     mkdir /mnt/shell/privatemode 0700 system system
     mkdir /storage/Private 0000 system system
@@ -27,69 +28,30 @@ on post-fs-data
     chown system system /data/privatemode
     restorecon /data/privatemode
 
-#skt except scan list
-    chmod 0644 /data/misc/wifi/hiddenAPs.txt
-
-# CP Reset Log
-    mkdir /data/radio 0770 radio radio
-
-# for SKT TBASED
-    mkdir /data/tbased 0775 root wifi
-    chown root wifi /data/tbased
-    chmod 0775 /data/tbased
-
-    chown wifi wifi /system/lib/libiwlan_module.so
-    chmod 0644 /system/lib/libiwlan_module.so
-    chmod 0755 /system/bin/tbased
-
-# SKT PM PlayReady
-    mkdir /data/playready 771 system skt
-    chown system skt /data/playready
-    chmod 0771 /data/playready
-
-# SKT DRM for hoppin
-    mkdir /data/data/.sktdrm 0775
-    chown system radio /data/data/.sktdrm
-    chmod 0775 /data/data/.sktdrm
-
-# SKT TBASE
-service tbased /system/bin/tbased
-    class main
-    user root
-    oneshot
-
 on boot
 # permission for Input Device(Touchkey).
+    chmod 0660 /sys/class/input/input1/enabled
+    chown system system /sys/class/input/input1/enabled
     chmod 0660 /sys/class/input/input2/enabled
     chown system system /sys/class/input/input2/enabled
     chown radio system /sys/class/sec/sec_touchkey/touch_sensitivity
     chown radio system /sys/class/sec/sec_touchkey/touchkey_firm_update
     chown system radio /sys/class/sec/sec_touchkey/glove_mode
     chown system radio /sys/class/sec/sec_touchkey/flip_mode
+    chown system radio /sys/class/sec/sec_touchkey/1mm_mode
     chown system radio /sys/class/sec/sec_touchkey/boost_level
-
-# IPSec for VOLTE
-    chown root system /dev/socket
-    chmod 0775 /dev/socket
 
 # permissions for bluetooth.
     setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
     chown bluetooth net_bt_stack ro.bt.bdaddr_path
-    chown bluetooth net_bt_stack /dev/ttyHS0
-    chmod 0660 /dev/ttyHS0
+    chown radio net_bt_stack /efs/bluetooth/bt_addr
+    chmod 0640 /efs/bluetooth/bt_addr
     chmod 0660 /sys/class/rfkill/rfkill0/state
     chown bluetooth net_bt_stack /sys/class/rfkill/rfkill0/state
     chown bluetooth net_bt_stack /sys/class/rfkill/rfkill0/type
 
-# NFC_BROADCOM
-    chmod 0600 /dev/bcm2079x
-    chown nfc nfc /dev/bcm2079x
-    mkdir /data/bcmnfc
-    mkdir /data/bcmnfc/param
-    chmod 0700 /data/bcmnfc
-    chmod 0700 /data/bcmnfc/param
-    chown nfc nfc /data/bcmnfc
-    chown nfc nfc /data/bcmnfc/param
+# DualWave
+    chown system system /sys/kernel/DualWave/sound/DUALWAVE_CONFIG
 
 # bluetooth LPM
     chmod 0660 /proc/bluetooth/sleep/lpm
@@ -98,9 +60,6 @@ on boot
     chown bluetooth net_bt_stack /proc/bluetooth/sleep/btwrite
     chmod 0600 /dev/btlock
     chown bluetooth bluetooth /dev/btlock
-
-# Permissions for usb_lock
-    chown system radio /sys/class/android_usb/android0/usb_lock
 
 # permission for Expander.
     chown system system /sys/class/sec/expander/expgpio
@@ -114,42 +73,53 @@ on boot
 
 # bluetooth dhcp config
 
-# tdmb
-    chown system system /dev/tdmb
-    chmod 0660 /dev/tdmb
+# Fingerprint
+    mkdir /dev/validity 0770 system system
+
+# Fingerprint_sensor
+    chown system radio /sys/class/fingerprint/fingerprint/type_check
 
 # SSWAP
     write /proc/sys/vm/swappiness 130
 
+# SENSOR FRAMEWORK : starts fingerprintService
+service vcsFPService /system/bin/vcsFPService
+    class late_start
+    user system
+    group system
+
+#Private Mode
+service privatemode /system/bin/sdcard -r /data/privatemode /mnt/shell/privatemode 1000 1000
+    class late_start
+    oneshot
+
 on fs
 
-# Support Preload install apks
-    mkdir /preload 0771 system system
-  
-#For Absolute Persistence Partition 
-       
-     mkdir /persdata 0755 system system 
-     mkdir /persdata/absolute 0750 system system 
-  
-     wait /dev/block/platform/msm_sdcc.1/by-name/persdata 
-     check_fs /dev/block/platform/msm_sdcc.1/by-name/persdata ext4 
-     mount ext4 /dev/block/platform/msm_sdcc.1/by-name/persdata /persdata/absolute nosuid nodev barrier=1 
-      
-     chown system system /persdata 
-     chmod 0755 /persdata 
-     chown system system /persdata/absolute 
-     chmod 0750 /persdata/absolute
+  # Support Preload install apks
+    wait /dev/block/platform/msm_sdcc.1/by-name/hidden 
+    mount ext4 /dev/block/platform/msm_sdcc.1/by-name/hidden /preload nosuid nodev ro barrier=1
+    setprop storage.preload.complete 1
 
-# bluetooth dhcp config
-service dhcpcd_bt-pan /system/bin/dhcpcd -ABKL
+#For Absolute Persistence Partition
+
+    mkdir /persdata 0755 system system
+    mkdir /persdata/absolute 0750 system system
+
+    wait /dev/block/platform/msm_sdcc.1/by-name/persdata
+    check_fs /dev/block/platform/msm_sdcc.1/by-name/persdata ext4
+    mount ext4 /dev/block/platform/msm_sdcc.1/by-name/persdata /persdata/absolute nosuid nodev barrier=1
+
+    chown system system /persdata
+    chmod 0755 /persdata
+    chown system system /persdata/absolute
+    chmod 0750 /persdata/absolute
+
+# service for TZPR provisioning version check app
+service scranton_RD /system/bin/scranton_RD
     class main
- disabled
- oneshot
-
-service iprenew_bt-pan /system/bin/dhcpcd -n
-    class late_start
- disabled
- oneshot
+    user root
+    disabled
+    oneshot
 
 # bootchecker
 service bootchecker /system/bin/bootchecker
@@ -158,10 +128,23 @@ service bootchecker /system/bin/bootchecker
     group system log
     oneshot
 
-service dmb /system/bin/dmbserver
+# start for TZPR provisioning version check app
+on property:sys.qseecomd.enable=true
+    start scranton_RD
+
+# TODO: replace it with device's DEXPREOPT_BOOT_JARS
+
+# AT Distributor for factory test
+service at_distributor /system/bin/at_distributor
+    class late_start
+    user root
+    group radio misc log
+
+# diag app for cp uart
+service diag_uart_log /system/bin/diag_uart_log
     class main
-    user system
-    group radio inet misc audio camera graphics net_bt net_bt_admin sdcard_rw sdcard_r shell
+    user root
+    group radio
 
 # service for TZPR provisioning version check app
 service scranton_RD /system/bin/scranton_RD
@@ -174,23 +157,12 @@ service scranton_RD /system/bin/scranton_RD
 on property:sys.qseecomd.enable=true
     start scranton_RD
 
-# umount service
-service umount_service /system/bin/umount /preload
-    disabled
-    oneshot
+    mkdir /efs/drm/playready 0775
+    chown drm system /efs/drm/playready
+    chmod 0775 /efs/drm/playready
 
-# MOBILE OFFICE Permanent memory access
-    mkdir /efs/security 0771 root root
-    chown radio system /efs/security
-    chmod 0771 /efs/security
 
-# Support Preload install apks
-on property:persist.sys.storage_preload=1
-    mount ext4 /dev/block/platform/msm_sdcc.1/by-name/hidden /preload nosuid nodev ro barrier=1
-    setprop storage.preload.complete 1
 
-on property:persist.sys.storage_preload=0
-    start umount_service
 
 # SSWAP
 service swapon /sbin/sswap -s
@@ -206,9 +178,26 @@ service ipsec-daemon /system/bin/IPSecService
     socket ipsec_socket stream 660 system system
     user system
     group system net_raw inet net_admin
-
-# AT Distributor for factory test
-service at_distributor /system/bin/at_distributor
-    class late_start
+    
+# service for TZPR provisioning version check app
+service scranton_RD /system/bin/scranton_RD
+    class main
     user root
-    group radio misc log
+    disabled
+    oneshot
+
+# start for TZPR provisioning version check app
+on property:sys.qseecomd.enable=true
+    start scranton_RD
+
+    mkdir /efs/drm/playready 0775
+    chown drm system /efs/drm/playready
+    chmod 0775 /efs/drm/playready
+
+## WTL_EDM_START
+## EDM AuditLog
+service edmaudit /system/bin/edmaudit
+    class main
+    user root
+
+## WTL_EDM_END

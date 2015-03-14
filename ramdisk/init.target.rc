@@ -293,7 +293,6 @@ service ml_daemon /system/bin/ml_daemon
     user root
     group root
 # SecEDS
-
 service TvoutService_C /system/bin/bintvoutservice
      class main
      user system

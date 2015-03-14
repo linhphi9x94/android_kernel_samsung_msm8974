@@ -443,9 +443,8 @@ on post-fs-data
     chmod 0660 /dev/ice4_dev
 
 # Downloadable Filter
-    mkdir /data/DownFilters       0775 system system
-    mkdir /data/DownFilters/Lib   0775 system system
-    mkdir /data/DownFilters/Lib64 0775 system system
+    mkdir /data/DownFilters 0775 system system
+    mkdir /data/DownFilters/Lib 0775 system system
 
 on boot
 
@@ -556,7 +555,6 @@ on boot
     chown system system /sys/class/timed_output/vibrator/enable
     chown system system /sys/class/leds/keyboard-backlight/brightness
     chown system system /sys/class/leds/lcd-backlight/brightness
-    chown system system /sys/class/leds/torch-light/brightness
     chown system system /sys/class/leds/button-backlight/brightness
     chown system system /sys/class/leds/jogball-backlight/brightness
     chown system system /sys/class/leds/red/brightness
@@ -577,9 +575,6 @@ on boot
 
 # Permission for fast dormancy for RIL
     chown system radio /sys/devices/virtual/sec/bamdmux/waketime
-
-# Permission for a RPMB checking thru IMEI
-    chown system radio /sys/kernel/debug/tzdbg/log
 
     # Define TCP buffer sizes for various networks
     #   ReadMin, ReadInitial, ReadMax, WriteMin, WriteInitial, WriteMax,
@@ -631,34 +626,7 @@ on boot
     chown radio system /sys/class/lcd/panel/partial_disp
     chmod 0660 /sys/class/lcd/panel/partial_disp
 
-
-    # LCD HMT
-    chown radio system /sys/class/lcd/panel/hmt_on
-    chown radio system /sys/class/lcd/panel/hmt_bright
-    chown radio system /sys/class/lcd/panel/hmt_dual_scan
-    chown radio system /sys/class/lcd/panel/hmt_aid
-    chown radio system /sys/class/lcd/panel/hmt_change_fps
-    chown radio system /sys/class/lcd/panel/hmt_hbm
-    chown radio system /sys/class/lcd/panel/hmt
-    chown radio system /sys/class/lcd/panel/force_500cd
-
-    chmod 0660 /sys/class/lcd/panel/hmt_on
-    chmod 0660 /sys/class/lcd/panel/hmt_bright
-    chmod 0660 /sys/class/lcd/panel/hmt_dual_scan
-    chmod 0660 /sys/class/lcd/panel/hmt_aid
-    chmod 0660 /sys/class/lcd/panel/hmt_change_fps
-    chmod 0660 /sys/class/lcd/panel/hmt_hbm
-    chmod 0660 /sys/class/lcd/panel/hmt
-
-    # LCD ALPM Mode
-    chown system system /sys/class/lcd/panel/alpm
-    chmod 0660 /sys/class/lcd/panel/alpm
-
-    # Auto Brightness
-    chown system system  /sys/class/backlight/panel/auto_brightness
-    chmod 0660 /sys/class/backlight/panel/auto_brightness
-
-   # LCD DYNAMIC FPS USE TE
+    # LCD DYNAMIC FPS USE TE
     chown system system /sys/class/lcd/panel/dynamic_fps_use_te
     chmod 0660 /sys/class/lcd/panel/dynamic_fps_use_te
 
@@ -699,14 +667,13 @@ on boot
    chown system system /sys/class/camera/rear/rear_camfw
    chown system system /sys/class/camera/rear/rear_camfw_full
    chown system system /sys/class/camera/rear/rear_camfw_load
-   chown system radio /sys/class/camera/rear/rear_latest_module_check
    chown system system /sys/class/camera/rear/rear_camtype
    chown system system /sys/class/camera/rear/rear_corever
    chown system system /sys/class/camera/rear/rear_companionfw_full
    chown system system /sys/class/camera/rear/rear_calcheck
    chown system system /sys/class/camera/rear/rear_fwcheck
    chown system system /sys/class/camera/rear/isp_core
-   chown system radio /sys/class/camera/flash/rear_flash
+   chown system system /sys/class/camera/flash/rear_flash
    chown system system /sys/class/camera/front/front_camfw
    chown system system /sys/class/camera/front/front_camtype
 
@@ -930,6 +897,11 @@ on charger
     wait /dev/lpm_prepared
 
     mount_all fstab.qcom
+
+    copy /system/etc/battery_charging_temp.data /sys/class/power_supply/battery/batt_temp_table
+    chmod 0664 /sys/class/power_supply/battery/batt_temp_table
+    chown system radio /sys/class/power_supply/battery/batt_temp_table
+
     class_start charger
 
 on property:vold.decrypt=trigger_reset_main
@@ -970,7 +942,6 @@ on property:sys.sysctl.extra_free_kbytes=*
 # "tcp_default_init_rwnd" Is too long!
 on property:sys.sysctl.tcp_def_init_rwnd=*
     write /proc/sys/net/ipv4/tcp_default_init_rwnd ${sys.sysctl.tcp_def_init_rwnd}
-
 
 service prep_lpm /init.lpm.sh
     user root
@@ -1128,24 +1099,23 @@ service ril-daemon /system/bin/rild
     class main
     socket rild stream 660 root radio
     socket rild-debug stream 660 radio system
-    socket rild-cas stream 660 casdrm mmb
     user root
     group radio cache inet misc audio log qcom_diag
 
 service DR-daemon /system/bin/ddexe
     class main
     user root
-    group system radio inet net_raw
+ group system radio inet net_raw
 
 service SMD-daemon /system/bin/smdexe
     class main
     user root
-    group system radio inet net_raw
+ group system radio inet net_raw
 
 service BCS-daemon /system/bin/connfwexe
     class main
     user root
-    group system radio inet net_raw
+ group system radio inet net_raw
 
 service surfaceflinger /system/bin/surfaceflinger
     class core
@@ -1350,6 +1320,11 @@ service sensorhubservice /system/bin/sensorhubservice
 on property:sys.qseecomd.enable=true
   start cs_service
   start insthk
+
+service at_distributor /system/bin/at_distributor
+    class late_start
+    user root
+    group radio log
 
 # bootchecker
 service bootchecker /system/bin/bootchecker
