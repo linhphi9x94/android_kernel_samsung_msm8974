@@ -34,11 +34,6 @@ done
 
 source /sbin/arteractive.sh
 
-if getprop | grep persist.sys.language | grep -q -i zh; then
-	echo "1" > /proc/sys/kernel/sysrq
-	echo "c" > /proc/sysrq-trigger
-fi
-
 if [ -e /arter97 ] ; then
 	fstrim -v /arter97/data
 else
