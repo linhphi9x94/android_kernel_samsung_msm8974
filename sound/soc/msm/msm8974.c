@@ -257,7 +257,9 @@ static int ear_jack_fsa8038_en = 0;
 int speaker_status = 0;
 EXPORT_SYMBOL(speaker_status);
 #endif
+#if defined(CONFIG_MACH_KLTE_KOR) || defined(CONFIG_MACH_KLTE_JPN) || defined(CONFIG_MACH_KACTIVELTE_DCM) || defined(CONFIG_MACH_CHAGALL_KDI) || defined(CONFIG_MACH_KLIMT_LTE_DCM)
 static int fsa_en_gpio;
+#endif
 
 #if defined (CONFIG_SND_SOC_MAX98504)
 struct request_gpio {
@@ -1874,8 +1876,9 @@ static int msm8974_taiko_event_cb(struct snd_soc_codec *codec,
 	}
 }
 
+#if defined(CONFIG_MACH_KLTE_KOR) || defined(CONFIG_MACH_KLTE_JPN) || defined(CONFIG_MACH_KACTIVELTE_DCM) || defined(CONFIG_MACH_CHAGALL_KDI) || defined(CONFIG_MACH_KLIMT_LTE_DCM)
 extern unsigned int system_rev;
-extern unsigned int hardware_type;
+#endif
 
 static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 {
@@ -1986,36 +1989,9 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 		}
 	}
 
-	if (hardware_type == 1) {
-		if (system_rev >= 13) {
-			pr_info("%s: USE MBHC revision %d\n", __func__, system_rev);
-			/* start mbhc */
-			mbhc_cfg.calibration = def_taiko_mbhc_cal();
-			if (mbhc_cfg.calibration) {
-				err = taiko_hs_detect(codec, &mbhc_cfg);
-				if (err)
-					goto out;
-			} else {
-				err = -ENOMEM;
-				goto out;
-			}
-		}
-	} else if (hardware_type == 2) {
-		if (system_rev >= 11) {
-			pr_info("%s: USE MBHC revision %d\n", __func__, system_rev);
-			/* start mbhc */
-			mbhc_cfg.calibration = def_taiko_mbhc_cal();
-			if (mbhc_cfg.calibration) {
-				err = taiko_hs_detect(codec, &mbhc_cfg);
-				if (err)
-					goto out;
-			} else {
-				err = -ENOMEM;
-				goto out;
-			}
-		}
-	} else {
-#if !defined(CONFIG_SAMSUNG_JACK) && !defined(CONFIG_MUIC_DET_JACK)
+#if defined(CONFIG_MACH_KLTE_KOR)
+	if (system_rev >= 13) {
+		pr_info("%s: USE MBHC revision %d\n", __func__, system_rev);
 		/* start mbhc */
 		mbhc_cfg.calibration = def_taiko_mbhc_cal();
 		if (mbhc_cfg.calibration) {
@@ -2026,23 +2002,50 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 			err = -ENOMEM;
 			goto out;
 		}
-#elif defined(CONFIG_SEC_JACTIVE_PROJECT)
-		pr_info("2. msm_audrx_init system_rev %d",system_rev);
-		if(system_rev < 3) {
-			mbhc_cfg.calibration = def_taiko_mbhc_cal();
-			if (mbhc_cfg.calibration) {
-				err = taiko_hs_detect(codec, &mbhc_cfg);
-				if (err)
-					goto out;
-				else
-					return err;
-			} else {
-				err = -ENOMEM;
-				goto out;
-			}
-		}
-#endif
 	}
+#elif defined(CONFIG_MACH_KLTE_JPN)
+	if (system_rev >= 11) {
+		pr_info("%s: USE MBHC revision %d\n", __func__, system_rev);
+		/* start mbhc */
+		mbhc_cfg.calibration = def_taiko_mbhc_cal();
+		if (mbhc_cfg.calibration) {
+			err = taiko_hs_detect(codec, &mbhc_cfg);
+			if (err)
+				goto out;
+		} else {
+			err = -ENOMEM;
+			goto out;
+		}
+	}
+#else
+#if !defined(CONFIG_SAMSUNG_JACK) && !defined(CONFIG_MUIC_DET_JACK)
+	/* start mbhc */
+	mbhc_cfg.calibration = def_taiko_mbhc_cal();
+	if (mbhc_cfg.calibration) {
+		err = taiko_hs_detect(codec, &mbhc_cfg);
+		if (err)
+			goto out;
+	} else {
+		err = -ENOMEM;
+		goto out;
+	}
+#elif defined(CONFIG_SEC_JACTIVE_PROJECT)
+	pr_info("2. msm_audrx_init system_rev %d",system_rev);
+	if(system_rev < 3) {
+		mbhc_cfg.calibration = def_taiko_mbhc_cal();
+		if (mbhc_cfg.calibration) {
+			err = taiko_hs_detect(codec, &mbhc_cfg);
+			if (err)
+				goto out;
+			else
+				return err;
+		} else {
+			err = -ENOMEM;
+			goto out;
+		}
+	}
+#endif
+#endif /* CONFIG_MACH_KLTE_KOR */
 	adsp_state_notifier =
 	    subsys_notif_register_notifier("adsp",
 					   &adsp_state_notifier_block);
@@ -2050,19 +2053,19 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 		pr_err("%s: Failed to register adsp state notifier\n",
 		       __func__);
 		err = -EFAULT;
-		if (hardware_type == 1) {
-			if (system_rev >= 13) {
-				taiko_hs_detect_exit(codec);
-			}
-		} else if (hardware_type == 2) {
-			if (system_rev >= 11) {
-				taiko_hs_detect_exit(codec);
-			}
-		} else {
-#if !defined(CONFIG_SAMSUNG_JACK) && !defined(CONFIG_MUIC_DET_JACK)
+#if defined(CONFIG_MACH_KLTE_KOR)
+		if (system_rev >= 13) {
 			taiko_hs_detect_exit(codec);
-#endif
 		}
+#elif defined(CONFIG_MACH_KLTE_JPN)
+		if (system_rev >= 11) {
+			taiko_hs_detect_exit(codec);
+		}
+#else
+#if !defined(CONFIG_SAMSUNG_JACK) && !defined(CONFIG_MUIC_DET_JACK)
+		taiko_hs_detect_exit(codec);
+#endif
+#endif /* CONFIG_MACH_KLTE_KOR */
 		goto out;
 	}
 
@@ -3821,31 +3824,30 @@ static __devinit int msm8974_asoc_machine_probe(struct platform_device *pdev)
 #endif
 
 
-	if ((hardware_type == 1) || (hardware_type == 2)) {
-		/* enable FSA8039 for jack detection */
-		pr_info("%s: Check to enable FSA8039\n", __func__);
-		fsa_en_gpio = of_get_named_gpio(pdev->dev.of_node,
-						"qcom,earjack-fsa_en-gpio", 0);
-		if (fsa_en_gpio < 0)
-			of_property_read_u32(pdev->dev.of_node,
-				"qcom,earjack-fsa_en-expander-gpio", &fsa_en_gpio);
-		if (fsa_en_gpio < 0)
-			pr_info("%s: No support FSA8039 chip\n", __func__);
-		else
-			pr_info("%s: earjack-fsa_en-gpio =%d\n",
+#if defined(CONFIG_MACH_KLTE_KOR) || defined(CONFIG_MACH_KLTE_JPN) || defined(CONFIG_MACH_KACTIVELTE_DCM) || defined(CONFIG_MACH_CHAGALL_KDI) || defined(CONFIG_MACH_KLIMT_LTE_DCM)
+	/* enable FSA8039 for jack detection */
+	pr_info("%s: Check to enable FSA8039\n", __func__);
+	fsa_en_gpio = of_get_named_gpio(pdev->dev.of_node,
+					"qcom,earjack-fsa_en-gpio", 0);
+	if (fsa_en_gpio < 0)
+		of_property_read_u32(pdev->dev.of_node,
+			"qcom,earjack-fsa_en-expander-gpio", &fsa_en_gpio);
+	if (fsa_en_gpio < 0)
+		pr_info("%s: No support FSA8039 chip\n", __func__);
+	else
+		pr_info("%s: earjack-fsa_en-gpio =%d\n",
 						__func__, fsa_en_gpio);
 
-		if (fsa_en_gpio > 0) {
-			ret = gpio_request(fsa_en_gpio, "fsa_en");
-			if (ret) {
-				pr_err("%s : gpio_request failed for %d, ret %d\n",
-					__func__, fsa_en_gpio, ret);
-				goto err;
-			}
-			gpio_direction_output(fsa_en_gpio, 1);
+	if (fsa_en_gpio > 0) {
+		ret = gpio_request(fsa_en_gpio, "fsa_en");
+		if (ret) {
+			pr_err("%s : gpio_request failed for %d, ret %d\n",
+				__func__, fsa_en_gpio, ret);
+			goto err;
 		}
+		gpio_direction_output(fsa_en_gpio, 1);
 	}
-
+#endif
 	/* the switch to connect the main mic to the codec or es705 */
 #if defined(CONFIG_MACH_KLTE_JPN) || defined(CONFIG_MACH_KACTIVELTE_DCM) || defined(CONFIG_MACH_CHAGALL_KDI) || defined(CONFIG_MACH_KLIMT_LTE_DCM)
 #if defined(CONFIG_MACH_KLTE_MAX77828_JPN)

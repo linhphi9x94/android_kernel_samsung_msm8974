@@ -1186,30 +1186,31 @@ static struct platform_driver sec_jack_driver = {
 	},
 };
 
+#if defined(CONFIG_MACH_KLTE_KOR) || defined(CONFIG_MACH_KLTE_JPN)
 extern unsigned int system_rev;
-extern unsigned int hardware_type;
+#endif
 
 static int __init sec_jack_init(void)
 {
-	if (hardware_type == 1) {
-		if (system_rev >= 13) {
-			pr_info("%s: Do not use sec jack in system_rev %d",
-				__func__, system_rev);
-			return 0;
-		} else {
-			return platform_driver_register(&sec_jack_driver);
-		}
-	} else if (hardware_type == 2) {
-		if (system_rev >= 11) {
-			pr_info("%s: Do not use sec jack in system_rev %d",
-				__func__, system_rev);
-			return 0;
-		} else {
-			return platform_driver_register(&sec_jack_driver);
-		}
+#if defined(CONFIG_MACH_KLTE_KOR)
+	if (system_rev >= 13) {
+		pr_info("%s: Do not use sec jack in system_rev %d",
+			__func__, system_rev);
+		return 0;
 	} else {
 		return platform_driver_register(&sec_jack_driver);
 	}
+#elif defined(CONFIG_MACH_KLTE_JPN)
+	if (system_rev >= 11) {
+		pr_info("%s: Do not use sec jack in system_rev %d",
+			__func__, system_rev);
+		return 0;
+	} else {
+		return platform_driver_register(&sec_jack_driver);
+	}
+#else
+	return platform_driver_register(&sec_jack_driver);
+#endif
 }
 
 static void __exit sec_jack_exit(void)
