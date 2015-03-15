@@ -74,7 +74,7 @@ static void *ipc_msm_hs_log_ctxt;
 #define IPC_MSM_HS_LOG_PAGES 30
 
 
-#undef _DW_ENABLED
+#define _DW_ENABLED
 
 #ifdef _DW_ENABLED
 #define MAX_DUALWAVE_MESSAGE_SIZE 128

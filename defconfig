@@ -1678,7 +1678,7 @@ CONFIG_EEPROM_93CX6=y
 #
 # Altera FPGA firmware download module
 #
-# CONFIG_DUALWAVE is not set
+CONFIG_DUALWAVE=y
 
 #
 # SCSI device support
