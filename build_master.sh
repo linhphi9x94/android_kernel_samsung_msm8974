@@ -12,7 +12,7 @@ if [ "${1}" = "skip" ] ; then
 fi
 
 ./build_clean.sh
-./build_kernel_hlte.sh CC='$(CROSS_COMPILE)gcc'
+./build_kernel_hlte.sh CC='$(CROSS_COMPILE)gcc' "$@"
 
 rm arter97-kernel-hlte-"$(cat version)".zip 2>/dev/null
 cp boot.img kernelzip/boot.img
