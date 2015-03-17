@@ -6,8 +6,8 @@
 # Currently we dont have e2fsck compiled. So fs check would failed.
 
 #<src>                                                <mnt_point>         <type>  <mnt_flags and options>                                                                       <fs_mgr_flags>
-/dev/block/platform/msm_sdcc.1/by-name/apnhlos        /firmware           vfat    ro,shortname=lower,uid=1000,gid=1026,dmask=227,fmask=337,context=u:object_r:firmware_file:s0  wait
-/dev/block/platform/msm_sdcc.1/by-name/modem          /firmware-modem     vfat    ro,shortname=lower,uid=1000,gid=1026,dmask=227,fmask=337,context=u:object_r:firmware_file:s0  wait
+/dev/block/platform/msm_sdcc.1/by-name/apnhlos        /firmware           vfat    ro,shortname=lower,uid=1000,gid=1000,dmask=227,fmask=337  wait
+/dev/block/platform/msm_sdcc.1/by-name/modem          /firmware-modem     vfat    ro,shortname=lower,uid=1000,gid=1000,dmask=227,fmask=337  wait
 
 # VOLD
 /devices/msm_sdcc.[.23]/mmc_host/mmc*		auto		vfat	default		voldmanaged=extSdCard:auto,noemulatedsd

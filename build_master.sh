@@ -12,7 +12,7 @@ if [ "${1}" = "skip" ] ; then
 fi
 
 ./build_clean.sh
-./build_kernel_klte.sh CC='$(CROSS_COMPILE)gcc' "$@"
+./build_kernel_klte.sh CC='$(CROSS_COMPILE)gcc' "$@" || exit 1
 
 rm arter97-kernel-klte-"$(cat version)".zip 2>/dev/null
 cp boot.img kernelzip/boot.img
@@ -24,7 +24,7 @@ cd ..
 ls -al arter97-kernel-klte-"$(cat version)".zip
 
 ./build_clean.sh nozip
-./build_kernel_kltekor.sh CC='$(CROSS_COMPILE)gcc' "$@"
+./build_kernel_kltekor.sh CC='$(CROSS_COMPILE)gcc' "$@" || exit 1
 
 rm arter97-kernel-kltekor-"$(cat version)".zip 2>/dev/null
 cp boot.img kernelzip/boot.img
