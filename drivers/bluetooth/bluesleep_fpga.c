@@ -269,6 +269,20 @@ static void bluesleep_sleep_work(struct work_struct *work)
 	if (mutex_is_locked(&bluesleep_mutex))
 		BT_DBG("Wait for mutex unlock in bluesleep_sleep_work");
 
+	if (bsi->uport == NULL) {
+		BT_DBG("bluesleep_sleep_work - uport is null");
+		return;
+	}
+
+	if (bsi->uport->state == NULL) {
+		BT_DBG("bluesleep_sleep_work - bsi->uport->state is null");
+		return;
+	}
+
+	if (bsi->uport->state->port.tty == NULL) {
+		BT_DBG("bluesleep_sleep_work - bsi->uport->state->port.tty is null");
+		return;
+	}
 	mutex_lock(&bluesleep_mutex);
 
 	if (bluesleep_can_sleep()) {
@@ -476,7 +490,7 @@ struct uart_port *bluesleep_get_uart_port(void)
 {
 	struct uart_port *uport = NULL;
 
-	uport = msm_hs_get_port_by_id(0);
+	uport = msm_hs_get_uart_port(0);
 
 	return uport;
 }
