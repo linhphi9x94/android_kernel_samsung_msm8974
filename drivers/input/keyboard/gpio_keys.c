@@ -91,7 +91,6 @@ struct gpio_keys_drvdata {
 #endif
 #ifdef CONFIG_SENSORS_HALL
 	int gpio_flip_cover;
-	int flip_code;
 	int irq_flip_cover;
 	bool flip_cover;
 	struct delayed_work flip_cover_dwork;
@@ -833,16 +832,13 @@ static void flip_cover_work(struct work_struct *work)
 #else
 	if ((comp_val[0] == comp_val[1]) && (comp_val[0] == comp_val[2])) {
 #endif
-		if (ddata->flip_code == SW_LID)
-			ddata->flip_cover = !gpio_get_value(ddata->gpio_flip_cover);
-		else
-			ddata->flip_cover = gpio_get_value(ddata->gpio_flip_cover);
+		ddata->flip_cover = !gpio_get_value(ddata->gpio_flip_cover);
 
 		printk(KERN_DEBUG "[keys] %s : %d code 0x%x\n",
-			__func__, ddata->flip_cover, ddata->flip_code);
+			__func__, ddata->flip_cover, SW_LID);
 
 		input_report_switch(ddata->input,
-			ddata->flip_code, ddata->flip_cover);
+			SW_LID, ddata->flip_cover);
 		input_sync(ddata->input);
 
 		if (ddata->flip_cover != flip_status_before) {
@@ -866,16 +862,13 @@ static void flip_cover_work(struct work_struct *work)
 		container_of(work, struct gpio_keys_drvdata,
 				flip_cover_dwork.work);
 
-	if (ddata->flip_code == SW_LID)
-		ddata->flip_cover = !gpio_get_value(ddata->gpio_flip_cover);
-	else
-		ddata->flip_cover = gpio_get_value(ddata->gpio_flip_cover);
+	ddata->flip_cover = !gpio_get_value(ddata->gpio_flip_cover);
 
 	printk(KERN_DEBUG "[keys] %s : %d code 0x%x\n",
-		__func__, ddata->flip_cover, ddata->flip_code);
+		__func__, ddata->flip_cover, SW_LID);
 
 	input_report_switch(ddata->input,
-			ddata->flip_code, ddata->flip_cover);
+			SW_LID, ddata->flip_cover);
 	input_sync(ddata->input);
 
 	if (ddata->flip_cover != flip_status_before) {
@@ -924,7 +917,7 @@ static irqreturn_t flip_cover_detect(int irq, void *dev_id)
 		ddata->flip_cover, ddata->flip_cover?"on":"off");
 
 	input_report_switch(ddata->input,
-		SW_LID, ddata->flip_cover);
+		SW_LID, !ddata->flip_cover);
 	input_sync(ddata->input);
 out:
 	return IRQ_HANDLED;
@@ -948,10 +941,7 @@ static irqreturn_t flip_cover_detect(int irq, void *dev_id)
 	DTIME_WAKE = ddata->debounce_set ? (HZ*14/100) : (HZ*5/100);
 #endif
 
-	if (ddata->flip_code == SW_LID)
-		flip_status = !gpio_get_value(ddata->gpio_flip_cover);
-	else
-		flip_status = gpio_get_value(ddata->gpio_flip_cover);
+	flip_status = !gpio_get_value(ddata->gpio_flip_cover);
 
 	cancel_delayed_work_sync(&ddata->flip_cover_dwork);
 #ifdef CONFIG_SENSORS_HALL_DEBOUNCE
@@ -1234,9 +1224,11 @@ static int gpio_keys_get_devtree_pdata(struct device *dev,
 
 		buttons[i].desc = of_get_property(pp, "label", NULL);
 #ifdef CONFIG_SENSORS_HALL
-		if ((buttons[i].code == SW_LID) || (buttons[i].code == SW_LID)) {
+		if (buttons[i].code == SW_FLIP)
+			buttons[i].code = SW_LID;
+
+		if (buttons[i].code == SW_LID) {
 			pdata->gpio_flip_cover = buttons[i].gpio;
-			pdata->flip_code = buttons[i].code;
 			pdata->nbuttons--;
 #ifdef CONFIG_SENSORS_HALL_IRQ_CTRL
 			pdata->workaround_set = (of_property_read_bool(pp, "hall_wa_disable") ? false : true);
@@ -1531,7 +1523,6 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
 	}
 #endif
 	ddata->gpio_flip_cover = pdata->gpio_flip_cover;
-	ddata->flip_code = pdata->flip_code;
 	ddata->irq_flip_cover = gpio_to_irq(ddata->gpio_flip_cover);
 	wake_lock_init(&ddata->flip_wake_lock, WAKE_LOCK_SUSPEND,
 		"flip_wake_lock");
@@ -1551,7 +1542,7 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
 #ifdef CONFIG_SENSORS_HALL
 	if(ddata->gpio_flip_cover != 0) {
 		input->evbit[0] |= BIT_MASK(EV_SW);
-		input_set_capability(input, EV_SW, ddata->flip_code);
+		input_set_capability(input, EV_SW, SW_LID);
 	}
 #endif
 #ifdef CONFIG_SENSORS_HALL_IRQ_CTRL

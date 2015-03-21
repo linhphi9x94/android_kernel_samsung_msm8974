@@ -36,8 +36,6 @@ struct gpio_keys_platform_data {
 	const char *name;		/* input device name */
 #ifdef CONFIG_SENSORS_HALL
 	int gpio_flip_cover;
-	int flip_code;
-
 #endif
 #ifdef CONFIG_SENSORS_HALL_IRQ_CTRL
 	bool workaround_set;
