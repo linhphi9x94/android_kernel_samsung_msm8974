@@ -333,6 +333,20 @@ static void msm_hs_bus_voting(struct msm_hs_port *msm_uport, unsigned int vote);
 #define UARTDM_TO_MSM(uart_port) \
 	container_of((uart_port), struct msm_hs_port, uport)
 
+struct uart_port * msm_hs_get_port_by_id(int num)
+{
+	struct uart_port *uport;
+	struct msm_hs_port *msm_uport;
+
+	if (num < 0 || num >= UARTDM_NR)
+		return NULL;
+
+	msm_uport = &q_uart_port[num];
+
+	uport = &(msm_uport->uport);
+
+	return uport;
+}
 
 static int msm_hs_ioctl(struct uart_port *uport, unsigned int cmd,
 						unsigned long arg)
@@ -2253,6 +2267,15 @@ void msm_hs_request_clock_on(struct uart_port *uport)
 	mutex_unlock(&msm_uport->clk_mutex);
 }
 EXPORT_SYMBOL(msm_hs_request_clock_on);
+
+int msm_hs_get_clock_state(struct uart_port *uport)
+{
+	struct msm_hs_port *msm_uport = UARTDM_TO_MSM(uport);
+
+	return (int)msm_uport->clk_state;
+}
+EXPORT_SYMBOL(msm_hs_get_clock_state);
+
 
 static irqreturn_t msm_hs_wakeup_isr(int irq, void *dev)
 {
