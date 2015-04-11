@@ -47,6 +47,7 @@ modules.builtin
 /*.img
 /*.zip
 /kernelzip/*.img
+!/kernelzip/system/lib/hw/audio.primary.msm8974.so
 /recoveryzip/*.img
 
 #

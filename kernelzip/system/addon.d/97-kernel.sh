@@ -11,7 +11,8 @@ rm /dev/block/mmcblk0p14
 
 list_files() {
 cat <<EOF
-etc/audio_policy.conf
+etc/mixer_paths.xml
+lib/hw/audio.primary.msm8974.so
 EOF
 }
 
@@ -27,6 +28,7 @@ case "$1" in
       [ -n "$REPLACEMENT" ] && R="$S/$REPLACEMENT"
       [ -f "$C/$S/$FILE" ] && restore_file $S/"$FILE" "$R"
     done
+    rm /system/etc/permissions/android.hardware.audio.low_latency.xml
     rm -rf /system/vendor/lib/hw
   ;;
   pre-backup)

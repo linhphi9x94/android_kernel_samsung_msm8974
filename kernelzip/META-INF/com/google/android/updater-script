@@ -10,6 +10,7 @@ package_extract_file("boot.img","/dev/block/platform/msm_sdcc.1/by-name/boot");
 ui_print(" - installing files");
 package_extract_dir("system", "/system");
 set_perm(0, 0, 0775, "/system/addon.d/97-kernel.sh");
+run_program("/sbin/busybox", "rm", "/system/etc/permissions/android.hardware.audio.low_latency.xml");
 run_program("/sbin/busybox", "rm", "-rf", "/system/vendor/lib/hw");
 
 ui_print(" - tuning file systems");
