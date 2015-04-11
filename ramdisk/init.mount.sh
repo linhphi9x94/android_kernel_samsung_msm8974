@@ -6,7 +6,7 @@ export ext4=1
 mount -t ext4 -o ro,noatime,nodiratime,data=ordered,barrier=0,nodiscard /dev/block/platform/msm_sdcc.1/by-name/system /system
 mount -t f2fs -o ro,noatime,nodiratime,background_gc=off,nodiscard /dev/block/platform/msm_sdcc.1/by-name/system /system
 
-if [ ! -f /system/priv-app/SystemUI/SystemUI.apk ] ; then
+if ! grep -q "ro.build.version.release=5.1" /system/build.prop ; then
 	export ext4=0
 	umount -f /system
 	mount -t ext4 -o noatime,nodiratime,data=ordered,barrier=0,nodiscard,nosuid,nodev,noauto_da_alloc,errors=panic /dev/block/platform/msm_sdcc.1/by-name/userdata /arter97/data
