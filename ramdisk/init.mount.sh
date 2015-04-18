@@ -4,18 +4,18 @@ export PATH=/res/asset:$PATH
 export ext4=1
 
 mount -t ext4 -o ro,noatime,nodiratime,data=ordered,barrier=0,nodiscard /dev/block/platform/msm_sdcc.1/by-name/system /system
-mount -t f2fs -o ro,noatime,nodiratime,background_gc=off,nodiscard /dev/block/platform/msm_sdcc.1/by-name/system /system
+mount -t f2fs -o ro,noatime,nodiratime,background_gc=off,discard /dev/block/platform/msm_sdcc.1/by-name/system /system
 
 if ! grep -q "ro.build.version.release=5.1" /system/build.prop ; then
 	export ext4=0
 	umount -f /system
 	mount -t ext4 -o noatime,nodiratime,data=ordered,barrier=0,nodiscard,nosuid,nodev,noauto_da_alloc,errors=panic /dev/block/platform/msm_sdcc.1/by-name/userdata /arter97/data
-	mount -t f2fs -o noatime,nodiratime,background_gc=on,nodiscard,nosuid,nodev /dev/block/platform/msm_sdcc.1/by-name/userdata /arter97/data
+	mount -t f2fs -o noatime,nodiratime,background_gc=on,discard,nosuid,nodev /dev/block/platform/msm_sdcc.1/by-name/userdata /arter97/data
 	if [ -e /arter97/data/arter97_secondrom/loadfromext ] ; then
 		umount /arter97/data
 		echo "on" > /sys/devices/msm_sdcc.3/mmc_host/mmc2/power/control
 		mount -t ext4 -o noatime,nodiratime,data=ordered,barrier=0,nodiscard,nosuid,nodev,noauto_da_alloc,errors=panic /dev/block/mmcblk1p1 /arter97/data
-		mount -t f2fs -o noatime,nodiratime,background_gc=on,nodiscard,nosuid,nodev /dev/block/mmcblk1p1 /arter97/data
+		mount -t f2fs -o noatime,nodiratime,background_gc=on,discard,nosuid,nodev /dev/block/mmcblk1p1 /arter97/data
 	fi
 	chmod 755 /arter97/data/arter97_secondrom/system
 	chmod 771 /arter97/data/arter97_secondrom/data
@@ -45,9 +45,9 @@ if ! grep -q "ro.build.version.release=5.1" /system/build.prop ; then
 else
 	rm -rf /arter97
 	mount -t ext4 -o noatime,nodiratime,data=ordered,barrier=0,nodiscard,nosuid,nodev,noauto_da_alloc,errors=panic /dev/block/platform/msm_sdcc.1/by-name/userdata /data || export ext4=0
-	mount -t f2fs -o noatime,nodiratime,background_gc=on,nodiscard,nosuid,nodev /dev/block/platform/msm_sdcc.1/by-name/userdata /data
+	mount -t f2fs -o noatime,nodiratime,background_gc=on,discard,nosuid,nodev /dev/block/platform/msm_sdcc.1/by-name/userdata /data
 	mount -t ext4 -o noatime,nodiratime,data=ordered,barrier=0,nodiscard,nosuid,nodev,noauto_da_alloc,errors=panic /dev/block/platform/msm_sdcc.1/by-name/cache /cache
-	mount -t f2fs -o noatime,nodiratime,background_gc=on,nodiscard,nosuid,nodev /dev/block/platform/msm_sdcc.1/by-name/cache /cache
+	mount -t f2fs -o noatime,nodiratime,background_gc=on,discard,nosuid,nodev /dev/block/platform/msm_sdcc.1/by-name/cache /cache
 fi
 
 if [ ! -e /system/etc/firmware/wcd9320/wcd9320_mbhc.bin ] ; then
