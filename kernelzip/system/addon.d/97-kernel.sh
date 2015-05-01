@@ -13,6 +13,8 @@ list_files() {
 cat <<EOF
 etc/mixer_paths.xml
 lib/hw/audio.primary.msm8974.so
+lib/hw/bluetooth.default.so
+vendor/lib/libbt-vendor.so
 EOF
 }
 
