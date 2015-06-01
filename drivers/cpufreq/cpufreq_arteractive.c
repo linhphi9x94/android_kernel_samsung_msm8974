@@ -119,7 +119,7 @@ static unsigned int hispeed_freq = 1190400;
 static unsigned long go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
 
 /* Go to hi speed when CPU load at or above this value on screen-off state */
-#define DEFAULT_GO_HISPEED_LOAD_SCREEN_OFF 110
+#define DEFAULT_GO_HISPEED_LOAD_SCREEN_OFF 99
 
 /* Sampling down factor to be applied to min_sample_time at max freq */
 static unsigned int sampling_down_factor = 100000;
