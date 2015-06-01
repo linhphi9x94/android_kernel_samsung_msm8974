@@ -22,7 +22,6 @@
 #include <linux/cdev.h>
 #include <linux/regulator/consumer.h>
 #include <linux/mm.h>
-#include <linux/powersuspend.h>
 
 #include <mach/kgsl.h>
 
@@ -218,8 +217,6 @@ extern const struct dev_pm_ops kgsl_pm_ops;
 
 int kgsl_suspend_driver(struct platform_device *pdev, pm_message_t state);
 int kgsl_resume_driver(struct platform_device *pdev);
-void kgsl_early_suspend_driver(struct power_suspend *h);
-void kgsl_late_resume_driver(struct power_suspend *h);
 
 void kgsl_trace_regwrite(struct kgsl_device *device, unsigned int offset,
 		unsigned int value);
