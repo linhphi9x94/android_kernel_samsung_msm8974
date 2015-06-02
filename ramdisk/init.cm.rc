@@ -10,6 +10,7 @@ on post-fs-data
     chown system system /cache/dalvik-cache
     chmod 0771 /cache/dalvik-cache
     mkdir /data/.ssh 0750 root shell
+    mkdir /cache/recovery 0770 system cache
 
     # Run sysinit
     start sysinit
@@ -113,6 +114,9 @@ on property:service.adb.tcp.port=5555
 on property:service.adb.tcp.port=-1
     stop adbd
     start adbd
+
+on property:persist.radio.noril=1
+    setprop ro.radio.noril 1
 
 # sysinit (/system/etc/init.d)
 service sysinit /system/bin/sysinit
