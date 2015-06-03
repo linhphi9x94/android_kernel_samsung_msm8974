@@ -52,7 +52,6 @@
 #include <linux/kthread.h>
 #include <linux/slab.h>
 #include <linux/kernel_stat.h>
-#include <linux/powersuspend.h>
 #include <asm/cputime.h>
 
 #define CONFIG_MODE_AUTO_CHANGE
@@ -102,9 +101,6 @@ struct cpufreq_interactive_cpuinfo {
 
 static DEFINE_PER_CPU(struct cpufreq_interactive_cpuinfo, cpuinfo);
 
-/* boolean for determining screen on/off state */
-static bool suspended = false;
-
 /* realtime thread handles frequency scaling */
 static struct task_struct *speedchange_task;
 static cpumask_t speedchange_cpumask;
@@ -117,9 +113,6 @@ static unsigned int hispeed_freq = 1190400;
 /* Go to hi speed when CPU load at or above this value. */
 #define DEFAULT_GO_HISPEED_LOAD 99
 static unsigned long go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
-
-/* Go to hi speed when CPU load at or above this value on screen-off state */
-#define DEFAULT_GO_HISPEED_LOAD_SCREEN_OFF 110
 
 /* Sampling down factor to be applied to min_sample_time at max freq */
 static unsigned int sampling_down_factor = 100000;
@@ -730,9 +723,7 @@ static void __cpufreq_interactive_timer(unsigned long data, bool is_notif)
 	pcpu->policy->util = cpu_load;
 #endif
 
-	if ( (suspended && (cpu_load >= DEFAULT_GO_HISPEED_LOAD_SCREEN_OFF)) ||
-	    (!suspended && (cpu_load >= go_hispeed_load)) ||
-	     (boosted)) {
+	if (cpu_load >= go_hispeed_load || boosted) {
 		if (pcpu->policy->cpu == 0) {
 			if (pcpu->target_freq < this_hispeed_freq) {
 				new_freq = this_hispeed_freq;
@@ -2005,23 +1996,6 @@ static void cpufreq_interactive_nop_timer(unsigned long data)
 {
 }
 
-static void arteractive_early_suspend(struct power_suspend *handler)
-{
-	suspended = true;
-	return;
-}
-
-static void arteractive_late_resume(struct power_suspend *handler)
-{
-	suspended = false;
-	return;
-}
-
-static struct power_suspend arteractive_suspend = {
-	.suspend = arteractive_early_suspend,
-	.resume = arteractive_late_resume,
-};
-
 static void cpufreq_interactive_timer(unsigned long data)
 {
 	__cpufreq_interactive_timer(data, false);
@@ -2053,8 +2027,6 @@ static int __init cpufreq_arteractive_init(void)
 			rc = input_register_handler(&interactive_input_handler);
 #endif
 	}
-
-	register_power_suspend(&arteractive_suspend);
 
 	spin_lock_init(&target_loads_lock);
 	spin_lock_init(&speedchange_cpumask_lock);
