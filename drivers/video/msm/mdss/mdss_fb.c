@@ -992,6 +992,16 @@ static int mdss_fb_pm_resume(struct device *dev)
 		dev_dbg(dev, "Ignore Resume\n");
 		return 0;
 	}
+
+	/*
+	 * It is possible that the runtime status of the fb device may
+	 * have been active when the system was suspended. Reset the runtime
+	 * status to suspended state after a complete system resume.
+	 */
+	pm_runtime_disable(dev);
+	pm_runtime_set_suspended(dev);
+	pm_runtime_enable(dev);
+
 	return mdss_fb_resume_sub(mfd);
 }
 #endif
@@ -2046,7 +2056,9 @@ static int mdss_fb_release_all(struct fb_info *info, bool release_all)
 		pr_warn("fb%d ioctl could not finish. waited 1 sec.\n",
 			mfd->index);
 
-	mdss_fb_pan_idle(mfd);
+	/* wait only for the last release */
+	if (release_all || (mfd->ref_cnt == 1))
+		mdss_fb_pan_idle(mfd);
 
 	pr_debug("release_all = %s\n", release_all ? "true" : "false");
 

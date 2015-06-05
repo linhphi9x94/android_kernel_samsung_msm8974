@@ -430,30 +430,26 @@ int kgsl_pwrscale_init(struct device *dev, const char *governor)
 
 	/* initialize any governor specific data here */
 	for (i = 0; i < profile->num_governor_data; i++) {
-		if (strncmp("msm-adreno-tz",
-				profile->governor_data[i].name,
-				DEVFREQ_NAME_LEN) == 0) {
-			data = (struct devfreq_msm_adreno_tz_data *)
-				profile->governor_data[i].data;
-			/*
-			 * If there is a separate GX power rail, allow
-			 * independent modification to its voltage through
-			 * the bus bandwidth vote.
-			 */
-			if (pwr->bus_control) {
-				out = 0;
-				while (pwr->bus_ib[out]) {
-					pwr->bus_ib[out] =
-						pwr->bus_ib[out] >> 20;
-					out++;
-				}
-				data->bus.num = out;
-				data->bus.ib = &pwr->bus_ib[0];
-				data->bus.index = &pwr->bus_index[0];
-				printk("kgsl: num bus is %d\n", out);
-			} else {
-				data->bus.num = 0;
+		data = (struct devfreq_msm_adreno_tz_data *)
+			profile->governor_data[i].data;
+		/*
+		 * If there is a separate GX power rail, allow
+		 * independent modification to its voltage through
+		 * the bus bandwidth vote.
+		 */
+		if (pwr->bus_control) {
+			out = 0;
+			while (pwr->bus_ib[out]) {
+				pwr->bus_ib[out] =
+					pwr->bus_ib[out] >> 20;
+				out++;
 			}
+			data->bus.num = out;
+			data->bus.ib = &pwr->bus_ib[0];
+			data->bus.index = &pwr->bus_index[0];
+			printk("kgsl: num bus is %d\n", out);
+		} else {
+			data->bus.num = 0;
 		}
 	}
 
