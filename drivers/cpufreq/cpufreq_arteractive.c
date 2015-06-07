@@ -52,6 +52,7 @@
 #include <linux/kthread.h>
 #include <linux/slab.h>
 #include <linux/kernel_stat.h>
+#include <linux/powersuspend.h>
 #include <asm/cputime.h>
 
 #define CONFIG_MODE_AUTO_CHANGE
@@ -113,6 +114,9 @@ static unsigned int hispeed_freq = 1190400;
 /* Go to hi speed when CPU load at or above this value. */
 #define DEFAULT_GO_HISPEED_LOAD 99
 static unsigned long go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
+
+/* Go to hi speed when CPU load at or above this value on screen-off state */
+#define DEFAULT_GO_HISPEED_LOAD_SCREEN_OFF 110
 
 /* Sampling down factor to be applied to min_sample_time at max freq */
 static unsigned int sampling_down_factor = 100000;
@@ -723,7 +727,9 @@ static void __cpufreq_interactive_timer(unsigned long data, bool is_notif)
 	pcpu->policy->util = cpu_load;
 #endif
 
-	if (cpu_load >= go_hispeed_load || boosted) {
+	if ( (power_suspended && (cpu_load >= DEFAULT_GO_HISPEED_LOAD_SCREEN_OFF)) ||
+	    (!power_suspended && (cpu_load >= go_hispeed_load)) ||
+	     (boosted)) {
 		if (pcpu->policy->cpu == 0) {
 			if (pcpu->target_freq < this_hispeed_freq) {
 				new_freq = this_hispeed_freq;
