@@ -420,7 +420,11 @@ int kgsl_pwrscale_init(struct device *dev, const char *governor)
 	for (i = 0; i < (pwr->num_pwrlevels - 1); i++)
 		pwrscale->freq_table[out++] = pwr->pwrlevels[i].gpu_freq;
 
-	profile->max_state = out;
+	/*
+	 * Max_state is the number of valid power levels.
+	 * The valid power levels range from 0 - (max_state - 1)
+	 */
+	profile->max_state = pwr->num_pwrlevels - 1;
 	/* link storage array to the devfreq profile pointer */
 	profile->freq_table = pwrscale->freq_table;
 
@@ -430,26 +434,30 @@ int kgsl_pwrscale_init(struct device *dev, const char *governor)
 
 	/* initialize any governor specific data here */
 	for (i = 0; i < profile->num_governor_data; i++) {
-		data = (struct devfreq_msm_adreno_tz_data *)
-			profile->governor_data[i].data;
-		/*
-		 * If there is a separate GX power rail, allow
-		 * independent modification to its voltage through
-		 * the bus bandwidth vote.
-		 */
-		if (pwr->bus_control) {
-			out = 0;
-			while (pwr->bus_ib[out]) {
-				pwr->bus_ib[out] =
-					pwr->bus_ib[out] >> 20;
-				out++;
+		if (strncmp("msm-adreno-tz",
+				profile->governor_data[i].name,
+				DEVFREQ_NAME_LEN) == 0) {
+			data = (struct devfreq_msm_adreno_tz_data *)
+				profile->governor_data[i].data;
+			/*
+			 * If there is a separate GX power rail, allow
+			 * independent modification to its voltage through
+			 * the bus bandwidth vote.
+			 */
+			if (pwr->bus_control) {
+				out = 0;
+				while (pwr->bus_ib[out]) {
+					pwr->bus_ib[out] =
+						pwr->bus_ib[out] >> 20;
+					out++;
+				}
+				data->bus.num = out;
+				data->bus.ib = &pwr->bus_ib[0];
+				data->bus.index = &pwr->bus_index[0];
+				printk("kgsl: num bus is %d\n", out);
+			} else {
+				data->bus.num = 0;
 			}
-			data->bus.num = out;
-			data->bus.ib = &pwr->bus_ib[0];
-			data->bus.index = &pwr->bus_index[0];
-			printk("kgsl: num bus is %d\n", out);
-		} else {
-			data->bus.num = 0;
 		}
 	}
 
