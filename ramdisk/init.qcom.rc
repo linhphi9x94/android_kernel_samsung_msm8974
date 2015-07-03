@@ -370,6 +370,8 @@ on post-fs-data
     chmod 0640 /efs/gyro_cal_data
     restorecon /efs/gyro_cal_data
 
+    write /proc/sys/vm/swappiness 130
+
 on property:init.svc.wpa_supplicant=stopped
     stop dhcpcd
 

@@ -50,6 +50,17 @@ else
 	mount -t f2fs -o noatime,nodiratime,background_gc=on,discard,nosuid,nodev /dev/block/platform/msm_sdcc.1/by-name/cache /cache
 fi
 
+if [ -f /data/arter97/system-cache ]; then
+	rm -rf /data/dalvik-cache
+	mkdir -p /system/dalvik-cache /data/dalvik-cache
+	chown 0.0 /system/dalvik-cache
+	chmod 771 /system/dalvik-cache
+	chown 0.0 /data/dalvik-cache
+	chmod 771 /data/dalvik-cache
+	mount -o rw,remount /system
+	mount --bind /system/dalvik-cache /data/dalvik-cache
+fi
+
 if [ ! -e /system/etc/firmware/wcd9320/wcd9320_mbhc.bin ] ; then
 	ln -s /data/misc/audio/mbhc.bin /system/etc/firmware/wcd9320/wcd9320_mbhc.bin
 fi
