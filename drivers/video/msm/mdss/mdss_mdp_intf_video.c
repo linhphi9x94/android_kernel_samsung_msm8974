@@ -697,7 +697,7 @@ static int mdss_mdp_video_display(struct mdss_mdp_ctl *ctl, void *arg)
 	struct mdss_mdp_video_ctx *ctx;
 	struct mdss_mdp_ctl *sctl;
 	struct mdss_panel_data *pdata = ctl->panel_data;
-	int rc;
+	int rc = 0;
 
 	pr_debug("kickoff ctl=%d\n", ctl->num);
 
@@ -720,6 +720,9 @@ static int mdss_mdp_video_display(struct mdss_mdp_ctl *ctl, void *arg)
 	} else {
 		WARN(1, "commit without wait! ctl=%d", ctl->num);
 	}
+
+	if(pdata->panel_info.cont_splash_enabled)
+		return rc;
 
 	MDSS_XLOG(ctl->num, ctl->underrun_cnt);
 
@@ -877,7 +880,6 @@ int mdss_mdp_video_reconfigure_splash_done(struct mdss_mdp_ctl *ctl,
 	{
 		mdss_mdp_ctl_intf_event(ctl, MDSS_EVENT_CONT_SPLASH_BEGIN, NULL);
 		mdp_video_write(ctx, MDSS_MDP_REG_INTF_TIMING_ENGINE_EN, 0);
-		mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF, false);
 		ctx->timegen_en = false;
 		/* Panel off command causes white screen flash at contsplash end so removing for LVDS panels */
 #if !defined(CONFIG_FB_MSM_MDSS_TC_DSI2LVDS_WXGA_PANEL)
