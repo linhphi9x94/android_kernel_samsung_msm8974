@@ -12,16 +12,14 @@
 
 /dts-v1/;
 
-/include/ "msm8974-v2-sec.dtsi"
-/include/ "msm8974-sec-hltejpn-r03.dtsi"
+/include/ "msm8974-v2.2-sec.dtsi"
+/include/ "msm8974-sec-klimtjpn-r03.dtsi"
+/include/ "msm8974-isdb-klimtjpn-r00.dtsi"
 
 / {
-	model = "Samsung HLTE JPN rev0.3";
-	compatible = "qcom,msm8974-cdp", "qcom,msm8974", "qcom,cdp";
+	model = "Samsung KLIMT JPN rev0.3";
 	/* qcom,msm-id = <126 1 0>; */
-	qcom,msm-id = <0x7E015101 3 0>,
-				<0xB8015101 3 0>,
-				<0xB9015101 3 0>;
+	qcom,msm-id = <0x7E01FF01 3 0>;
 	/* [31:24] chip-id, [23:16] platform-id, [15:8] national code, [7:0] operator
 		revision, reserved */
 };

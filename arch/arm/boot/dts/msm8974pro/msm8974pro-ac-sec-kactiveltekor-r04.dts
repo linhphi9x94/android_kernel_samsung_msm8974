@@ -14,20 +14,16 @@
 
 /include/ "msm8974pro-sec.dtsi"
 /include/ "msm8974pro-max77804k-k.dtsi"
-/include/ "msm8974pro-ac-sec-k-r04.dtsi"
+/include/ "msm8974pro-ac-sec-kactiveltekor-r04.dtsi"
 
 / {
-	model = "SAMSUNG K PROJECT REV04";
+	model = "Samsung KACTIVE KOR OPEN rev0.4";
 	compatible = "qcom,msm8974-mtp", "qcom,msm8974", "qcom,mtp";
 	/*QCOM BOARD REV TYPE...*/
 	/*qcom,msm-id = <194 8 0x10000>;*/
 	/*SEC BOARD REV TYPE...*/
-        qcom,msm-id = <0xC2085101 4 0x10000>;
+        qcom,msm-id = <0xC208FF01 4 0x10000>;
         /* [31:24] chip-id, [23:16] platform-id, [15:8] national code, [7:0] operator revision, reserved */
-};
-
-&sdhc_1 {
-	qcom,clk-rates = <400000 20000000 25000000 50000000 100000000>;
 };
 
 &pma8084_vadc {
@@ -36,7 +32,7 @@
 		reg = <0x23>;
 		qcom,decimation = <0>;
 		qcom,pre-div-channel-scaling = <1>; /* 1:3 scaling */
-		qcom,calibration-type = "absolute";
+		qcom,calibration-type = "ratiometric";
 		qcom,scale-function = <0>;
 		qcom,hw-settle-time = <0>;
 		qcom,fast-avg-setup = <0>;

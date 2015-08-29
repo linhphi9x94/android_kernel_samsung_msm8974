@@ -46,7 +46,7 @@ _start:
 	.word tbl               // table needed by firmware ROM
 tbl:	.word (endtbl - tbl)
 	.word 0
-  	.word conf
+	.word conf
 endtbl:	.word 0
 conf:	.word 0xa5a55a5a
 	.word 0x001f1555
@@ -70,26 +70,26 @@ copycode: // copy the code HW Sram
 	ldr		pc, sram // jump to the copied code
 
 wait:	ldrh	r1, [r4]        // wait for flag!=0
- 	cmp	r1, #0
+	cmp	r1, #0
 	beq	wait
 
 	mov	r1, r13         // buffer address
- 	ldr	r3, [r4,#4]     // destaddr
+	ldr	r3, [r4,#4]     // destaddr
 
- 	ldrh	r2, [r4,#2]     // get segment length
+	ldrh	r2, [r4,#2]     // get segment length
 	add     r2, r2, #63     // round length to next 64 bytes
 	movs	r2, r2, lsr #6  // and divide by 64
 	moveq	r0, #2          // if 0, set flag to 2, else signal
 	strh	r0, [r4]        // that buffer is accepted by setting to 0
         beq wait
-	
+
 copyloop:
 	ldmia	r1!, {r5-r12}
 	stmia	r3!, {r5-r12}
 	ldmia	r1!, {r5-r12}
 	stmia	r3!, {r5-r12}
- 	subs	r2, r2, #1
- 	bne	copyloop
+	subs	r2, r2, #1
+	bne	copyloop
 
 	eor     r13, r13, #0x1400    // switch to other buffer
 	b	wait
