@@ -1071,17 +1071,19 @@ int set_freq_limit(unsigned long id, unsigned int freq)
 		int cpu;
 		unsigned int cur = 0;
 
-		cur = cpufreq_quick_get(0);
-		if (cur) {
-			struct cpufreq_policy policy;
-			policy.cpu = 0;
+		for_each_online_cpu(cpu) {
+			cur = cpufreq_quick_get(cpu);
+			if (cur) {
+				struct cpufreq_policy policy;
+				policy.cpu = cpu;
 
-			if (cur < min)
-				cpufreq_driver_target(&policy,
-					min, CPUFREQ_RELATION_H);
-			else if (cur > max)
-				cpufreq_driver_target(&policy,
-					max, CPUFREQ_RELATION_L);
+				if (cur < min)
+					cpufreq_driver_target(&policy,
+						min, CPUFREQ_RELATION_H);
+				else if (cur > max)
+					cpufreq_driver_target(&policy,
+						max, CPUFREQ_RELATION_L);
+			}
 		}
 	}
 
