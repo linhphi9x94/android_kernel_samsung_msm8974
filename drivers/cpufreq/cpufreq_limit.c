@@ -62,7 +62,8 @@ struct cpufreq_limit_handle *cpufreq_limit_get(unsigned long min_freq,
 	list_add_tail(&handle->node, &cpufreq_limit_requests);
 	mutex_unlock(&cpufreq_limit_lock);
 
-	cpufreq_update_policy(0);
+	for_each_online_cpu(i)
+		cpufreq_update_policy(i);
 
 	return handle;
 }
@@ -86,7 +87,8 @@ int cpufreq_limit_put(struct cpufreq_limit_handle *handle)
 	list_del(&handle->node);
 	mutex_unlock(&cpufreq_limit_lock);
 
-	cpufreq_update_policy(0);
+	for_each_online_cpu(i)
+		cpufreq_update_policy(i);
 
 	kfree(handle);
 	return 0;
