@@ -46,8 +46,8 @@ modules.builtin
 /Module.symvers
 /*.img
 /*.zip
+!/kernelzip/**
 /kernelzip/*.img
-!/kernelzip/system/lib/*.so
 /recoveryzip/*.img
 
 #
