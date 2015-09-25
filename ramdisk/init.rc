@@ -268,6 +268,7 @@ on post-fs-data
     chmod 0771 /data
     # We restorecon /data in case the userdata partition has been reset.
     restorecon /data
+    restorecon_recursive /data/system/container
     restorecon_recursive /data/media
 
     # Avoid predictable entropy pool. Carry over entropy from previous boot.
@@ -407,6 +408,10 @@ on post-fs-data
     chmod 0775 /system/lib/drm
 
     restorecon -R /efs
+    restorecon -R /carrier
+    restorecon_recursive /data/misc/keystore
+    restorecon_recursive /data/property
+    restorecon_recursive /data/security
 # ]
 
 # DRK permission
@@ -1052,6 +1057,11 @@ on property:selinux.reload_policy=1
     chown -R system system /sys/fs/selinux/booleans
     chown system system /sys/fs/selinux/commit_pending_bools
 
+# SEC_SELINUX to support spota
+on property:selinux.sec.restorecon=1
+    restorecon_recursive /data/security/spota
+    restorecon_recursive /data/security/aasa
+
 # adbd is controlled via property triggers in init.<platform>.usb.rc
 service adbd /sbin/adbd --root_seclabel=u:r:su:s0
     class core
@@ -1088,19 +1098,25 @@ service servicemanager /system/bin/servicemanager
     onrestart restart sensorhubservice
     onrestart restart TvoutService_C
 
-service vold /system/bin/vold
-    class core
-    socket vold stream 0660 root mount
-    ioprio be 2
-## Samsung ODE >>>
-    socket dir_enc_report stream 0660 root mount
-## Samsung ODE <<<
-
 service epmd /system/bin/epmd
     class main
     socket epm stream 0660 system system
     socket ppm stream 0660 system system
     ioprio be 2
+
+service vold /system/bin/vold
+    class core
+    socket vold stream 0660 root mount
+    ioprio be 2
+## Knox
+    socket epm stream 0660 system system
+    socket ppm stream 0660 system system
+## Samsung ODE >>>
+    socket dir_enc_report stream 0660 root mount
+## Samsung ODE <<<
+
+## Frigatebird
+    socket frigate stream 0660 system system
 
 service netd /system/bin/netd
     class main
