@@ -12,6 +12,6 @@ echo "0" > /sys/devices/system/cpu/cpu2/online
 echo "0" > /sys/devices/system/cpu/cpu3/online
 
 source /sbin/cpu.sh
-source /sbin/interactive.sh
+source /sbin/arteractive.sh
 
 touch /dev/lpm_prepared
