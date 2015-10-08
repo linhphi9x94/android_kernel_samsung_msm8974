@@ -3,7 +3,7 @@
 
    Written By: Adam Radford <linuxraid@lsi.com>
    Modifications By: Joel Jacobson <linux@3ware.com>
-		     Arnaldo Carvalho de Melo <acme@conectiva.com.br>
+   		     Arnaldo Carvalho de Melo <acme@conectiva.com.br>
                      Brad Strand <linux@3ware.com>
 
    Copyright (C) 1999-2010 3ware Inc.
@@ -1140,7 +1140,7 @@ static int tw_setfeature(TW_Device_Extension *tw_dev, int parm, int param_size,
 	unsigned long command_que_value;
 	unsigned long param_value;
 
-	/* Initialize SetParam command packet */
+  	/* Initialize SetParam command packet */
 	if (tw_dev->command_packet_virtual_address[request_id] == NULL) {
 		printk(KERN_WARNING "3w-xxxx: tw_setfeature(): Bad command packet virtual address.\n");
 		return 1;
@@ -1170,7 +1170,7 @@ static int tw_setfeature(TW_Device_Extension *tw_dev, int parm, int param_size,
 	command_packet->request_id = request_id;
 	command_packet->byte6.parameter_count = 1;
 
-	command_que_value = tw_dev->command_packet_physical_address[request_id];
+  	command_que_value = tw_dev->command_packet_physical_address[request_id];
 	if (command_que_value == 0) {
 		printk(KERN_WARNING "3w-xxxx: tw_setfeature(): Bad command packet physical address.\n");
 	return 1;
@@ -1283,32 +1283,6 @@ static int tw_initialize_device_extension(TW_Device_Extension *tw_dev)
 	return 0;
 } /* End tw_initialize_device_extension() */
 
-static int tw_map_scsi_sg_data(struct pci_dev *pdev, struct scsi_cmnd *cmd)
-{
-	int use_sg;
-
-	dprintk(KERN_WARNING "3w-xxxx: tw_map_scsi_sg_data()\n");
-
-	use_sg = scsi_dma_map(cmd);
-	if (use_sg < 0) {
-		printk(KERN_WARNING "3w-xxxx: tw_map_scsi_sg_data(): pci_map_sg() failed.\n");
-		return 0;
-	}
-
-	cmd->SCp.phase = TW_PHASE_SGLIST;
-	cmd->SCp.have_data_in = use_sg;
-
-	return use_sg;
-} /* End tw_map_scsi_sg_data() */
-
-static void tw_unmap_scsi_data(struct pci_dev *pdev, struct scsi_cmnd *cmd)
-{
-	dprintk(KERN_WARNING "3w-xxxx: tw_unmap_scsi_data()\n");
-
-	if (cmd->SCp.phase == TW_PHASE_SGLIST)
-		scsi_dma_unmap(cmd);
-} /* End tw_unmap_scsi_data() */
-
 /* This function will reset a device extension */
 static int tw_reset_device_extension(TW_Device_Extension *tw_dev)
 {
@@ -1331,8 +1305,8 @@ static int tw_reset_device_extension(TW_Device_Extension *tw_dev)
 			srb = tw_dev->srb[i];
 			if (srb != NULL) {
 				srb->result = (DID_RESET << 16);
-				tw_dev->srb[i]->scsi_done(tw_dev->srb[i]);
-				tw_unmap_scsi_data(tw_dev->tw_pci_dev, tw_dev->srb[i]);
+				scsi_dma_unmap(srb);
+				srb->scsi_done(srb);
 			}
 		}
 	}
@@ -1779,8 +1753,8 @@ static int tw_scsiop_read_write(TW_Device_Extension *tw_dev, int request_id)
 	command_packet->byte8.io.lba = lba;
 	command_packet->byte6.block_count = num_sectors;
 
-	use_sg = tw_map_scsi_sg_data(tw_dev->tw_pci_dev, tw_dev->srb[request_id]);
-	if (!use_sg)
+	use_sg = scsi_dma_map(srb);
+	if (use_sg <= 0)
 		return 1;
 
 	scsi_for_each_sg(tw_dev->srb[request_id], sg, use_sg, i) {
@@ -1966,9 +1940,6 @@ static int tw_scsi_queue_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_c
 
 	/* Save the scsi command for use by the ISR */
 	tw_dev->srb[request_id] = SCpnt;
-
-	/* Initialize phase to zero */
-	SCpnt->SCp.phase = TW_PHASE_INITIAL;
 
 	switch (*command) {
 		case READ_10:
@@ -2196,12 +2167,11 @@ static irqreturn_t tw_interrupt(int irq, void *dev_instance)
 
 				/* Now complete the io */
 				if ((error != TW_ISR_DONT_COMPLETE)) {
+					scsi_dma_unmap(tw_dev->srb[request_id]);
+					tw_dev->srb[request_id]->scsi_done(tw_dev->srb[request_id]);
 					tw_dev->state[request_id] = TW_S_COMPLETED;
 					tw_state_request_finish(tw_dev, request_id);
 					tw_dev->posted_request_count--;
-					tw_dev->srb[request_id]->scsi_done(tw_dev->srb[request_id]);
-
-					tw_unmap_scsi_data(tw_dev->tw_pci_dev, tw_dev->srb[request_id]);
 				}
 			}
 
@@ -2456,3 +2426,4 @@ static void __exit tw_exit(void)
 
 module_init(tw_init);
 module_exit(tw_exit);
+
