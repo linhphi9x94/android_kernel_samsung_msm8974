@@ -5,6 +5,7 @@ ui_print(" - mounting data partition");
 run_program("/sbin/mount", "/data");
 
 ui_print(" - flashing boot.img");
+run_program("/sbin/busybox", "mknod", "/dev/block/mmcblk0p14", "b", "179", "14");
 package_extract_file("boot.img","/dev/block/platform/msm_sdcc.1/by-name/boot");
 
 ui_print(" - installing files");

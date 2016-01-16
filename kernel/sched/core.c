@@ -52,6 +52,7 @@
 #include <linux/timer.h>
 #include <linux/rcupdate.h>
 #include <linux/cpu.h>
+#include <linux/cpufreq.h>
 #include <linux/cpuset.h>
 #include <linux/percpu.h>
 #include <linux/proc_fs.h>
@@ -88,6 +89,9 @@
 #include <trace/events/sched.h>
 
 ATOMIC_NOTIFIER_HEAD(migration_notifier_head);
+#ifdef CONFIG_ANDROID_BG_SCAN_MEM
+RAW_NOTIFIER_HEAD(bgtsk_migration_notifier_head);
+#endif
 
 void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
 {
@@ -2986,6 +2990,11 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
 
 	/* Account for user time used */
 	acct_update_integrals(p);
+
+#ifdef CONFIG_CPU_FREQ_STAT
+	/* Account power usage for user time */
+	acct_update_power(p, cputime);
+#endif
 }
 
 /*
@@ -3036,6 +3045,11 @@ void __account_system_time(struct task_struct *p, cputime_t cputime,
 
 	/* Account for system time used */
 	acct_update_integrals(p);
+
+#ifdef CONFIG_CPU_FREQ_STAT
+	/* Account power usage for system time */
+	acct_update_power(p, cputime);
+#endif
 }
 
 /*
@@ -8110,8 +8124,14 @@ static void cpu_cgroup_attach(struct cgroup *cgrp,
 {
 	struct task_struct *task;
 
-	cgroup_taskset_for_each(task, cgrp, tset)
+	cgroup_taskset_for_each(task, cgrp, tset) {
 		sched_move_task(task);
+#ifdef CONFIG_ANDROID_BG_SCAN_MEM
+		if (task_notify_on_migrate(task) && thread_group_leader(task))
+			raw_notifier_call_chain(&bgtsk_migration_notifier_head,
+						0, NULL);
+#endif
+	}
 }
 
 static void

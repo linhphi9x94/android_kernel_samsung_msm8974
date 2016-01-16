@@ -10,6 +10,6 @@ echo "0" > /sys/devices/system/cpu/cpu2/online
 echo "0" > /sys/devices/system/cpu/cpu3/online
 
 source /sbin/cpu.sh
-source /sbin/arteractive.sh
+source /sbin/intelliactive.sh
 
 touch /dev/lpm_prepared
