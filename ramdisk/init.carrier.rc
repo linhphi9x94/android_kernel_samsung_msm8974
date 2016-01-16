@@ -4,15 +4,6 @@
 # This is a common source of Android security bugs.
 #
 
-on post-fs-data
-
-    restorecon /dev/icd
-    restorecon /dev/icdr
-
-on early-boot
-    chown bluetooth net_bt_stack /dev/ttyHS0
-    chmod 0660 /dev/ttyHS0
-
 on boot
 # permission for Input Device(Touchkey).
     chmod 0660 /sys/class/input/input2/enabled
@@ -22,6 +13,11 @@ on boot
     chown system radio /sys/class/sec/sec_touchkey/glove_mode
     chown system radio /sys/class/sec/sec_touchkey/flip_mode
     chown system radio /sys/class/sec/sec_touchkey/boost_level
+
+# IPSec for VOLTE
+    chown root system /dev/socket
+	chmod 0775 /dev/socket
+
 # permission for Input Device(Wacom).
     chmod 0660 /sys/class/input/input3/enabled
     chown system system /sys/class/input/input3/enabled
@@ -38,9 +34,21 @@ on boot
 # permissions for bluetooth.
     setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
     chown bluetooth net_bt_stack ro.bt.bdaddr_path
+    chown bluetooth net_bt_stack /dev/ttyHS0
+    chmod 0660 /dev/ttyHS0
     chmod 0660 /sys/class/rfkill/rfkill0/state
     chown bluetooth net_bt_stack /sys/class/rfkill/rfkill0/state
     chown bluetooth net_bt_stack /sys/class/rfkill/rfkill0/type
+
+# NFC_BROADCOM
+    chmod 0600 /dev/bcm2079x
+    chown nfc nfc /dev/bcm2079x
+    mkdir /data/bcmnfc
+    mkdir /data/bcmnfc/param
+    chmod 0700 /data/bcmnfc
+    chmod 0700 /data/bcmnfc/param
+    chown nfc nfc /data/bcmnfc
+    chown nfc nfc /data/bcmnfc/param
 
 # bluetooth LPM
     chmod 0660 /proc/bluetooth/sleep/lpm
@@ -50,35 +58,10 @@ on boot
     chmod 0600 /dev/btlock
     chown bluetooth bluetooth /dev/btlock
 
-# bluetooth dhcp config
-
-# Define TCP buffer sizes for various networks
-#   ReadMin, ReadInitial, ReadMax, WriteMin, WriteInitial, WriteMax,
-    setprop net.tcp.buffersize.default 4096,87380,110208,4096,16384,110208
-    setprop net.tcp.buffersize.lte     524288,1048576,2560000,524288,1048576,2560000
-    setprop net.tcp.buffersize.umts    4094,87380,1220608,4096,16384,1220608
-    setprop net.tcp.buffersize.hspa    4094,87380,1220608,4096,16384,1220608
-    setprop net.tcp.buffersize.hsupa   4094,87380,1220608,4096,16384,1220608
-    setprop net.tcp.buffersize.hsdpa   4094,87380,1220608,4096,16384,1220608
-    setprop net.tcp.buffersize.hspap   4094,87380,1220608,4096,16384,1220608
-    setprop net.tcp.buffersize.edge    4093,26280,35040,4096,16384,35040
-    setprop net.tcp.buffersize.gprs    4092,8760,11680,4096,8760,11680
-
-
-# TODO: replace it with device's DEXPREOPT_BOOT_JARS
-
-# tdmb
-    chown system system /dev/tdmb
-    chmod 0660 /dev/tdmb
-
-# reset_reason
-    chown system system /proc/reset_reason
-    chmod 0600 /proc/reset_reason
-
-# Permissions for usb_lock
-    chown system radio /sys/class/sec/switch/.usb_lock/enable
-
 on fs
+
+# Support Preload install apks
+    mkdir /preload 0771 system system
   
 #For Absolute Persistence Partition 
        
@@ -94,10 +77,16 @@ on fs
      chown system system /persdata/absolute 
      chmod 0750 /persdata/absolute
 
-service dmb /system/bin/dmbserver
+# bluetooth dhcp config
+service dhcpcd_bt-pan /system/bin/dhcpcd -ABKL
     class main
-    user media
-    group system radio inet misc audio camera graphics net_bt net_bt_admin sdcard_rw sdcard_r shell media_rw
+ disabled
+ oneshot
+
+service iprenew_bt-pan /system/bin/dhcpcd -n
+    class late_start
+ disabled
+ oneshot
 
 # service for TZPR provisioning version check app
 service scranton_RD /system/bin/scranton_RD
@@ -110,45 +99,36 @@ service scranton_RD /system/bin/scranton_RD
 on property:sys.qseecomd.enable=true
     start scranton_RD
 
-on post-fs-data
-# SKT LAW Permanent memory access
-    mkdir /efs/sktdm_mem 0771 root root
-    chown radio system /efs/sktdm_mem
-    chmod 0771 /efs/sktdm_mem
-
-on post-fs-data
-# MOBILE OFFICE Permanent memory access
-    mkdir /efs/security 0771 root root
-    chown radio system /efs/security
-    chmod 0771 /efs/security
-
-#skt except scan list
-    chmod 0644 /data/misc/wifi/hiddenAPs.txt
-
-    # for SKT TBASED
-    mkdir /data/tbased 0775 root wifi
-    chown root wifi /data/tbased
-    chmod 0775 /data/tbased
-
-    chown wifi wifi /system/lib/libiwlan_module.so
-    chmod 0644 /system/lib/libiwlan_module.so
-    chmod 0755 /system/bin/tbased
-
-# SKT PM PlayReady
-    mkdir /data/playready 771 system skt
-    chown system skt /data/playready
-    chmod 0771 /data/playready
-
-# SKT DRM for hoppin
-    mkdir /data/data/.sktdrm 0775
-    chown system radio /data/data/.sktdrm
-    chmod 0775 /data/data/.sktdrm
-    
-# CP Reset Log
-    mkdir /data/radio 0770 radio radio
-
-# SKT TBASE
-service tbased /system/bin/tbased
-    class main
-    user root
+# umount service
+service umount_service /system/bin/umount /preload
+    disabled
     oneshot
+    
+# Support Preload install apks
+on property:persist.sys.storage_preload=1
+    mount ext4 /dev/block/platform/msm_sdcc.1/by-name/hidden /preload nosuid nodev ro barrier=1
+    setprop storage.preload.complete 1
+
+on property:persist.sys.storage_preload=0
+    start umount_service
+
+# TODO: replace it with device's DEXPREOPT_BOOT_JARS
+# bootchecker
+service bootchecker /system/bin/bootchecker
+    class late_start
+    user system
+    group system log
+    oneshot
+
+# IPSec for VOLTE
+service ipsec-daemon /system/bin/IPSecService
+    class main
+    socket ipsec_socket stream 660 system system
+    user system
+    group system net_raw inet net_admin
+
+# AT Distributor for factory test
+service at_distributor /system/bin/at_distributor
+    class late_start
+    user root
+    group radio misc log

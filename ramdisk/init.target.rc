@@ -75,17 +75,10 @@ on post-fs-data
     export MC_AUTH_TOKEN_PATH /efs
 
 # set device node permissions for TLC apps
-<<<<<<< HEAD
 	chmod 700 /dev/mobicore
 	chmod 666 /dev/mobicore-user
 	chown system system /dev/mobicore
 	chown radio system /dev/mobicore-user
-=======
-    chmod 700 /dev/mobicore
-    chmod 666 /dev/mobicore-user
-    chown system system /dev/mobicore
-    chown radio system /dev/mobicore-user
->>>>>>> ks01lte_touchwiz
 
 on boot
     insmod /system/lib/modules/adsprpc.ko
