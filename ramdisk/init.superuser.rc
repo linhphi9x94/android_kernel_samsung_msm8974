@@ -1,5 +1,6 @@
 # su daemon
 service su_daemon /system/xbin/su --daemon
+    oneshot
 
 on property:persist.sys.root_access=0
     stop su_daemon
