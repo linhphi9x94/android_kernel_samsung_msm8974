@@ -311,6 +311,7 @@ on post-fs-data
     mkdir /data/misc/wifi/sockets 0770 wifi wifi
     mkdir /data/misc/wifi/wpa_supplicant 0770 wifi wifi
     mkdir /data/misc/wifi_share_profile 0771 wifi system
+    mkdir /data/misc/wifi_hostapd 0771 wifi system
     mkdir /data/misc/ethernet 0770 system system
     mkdir /data/misc/dhcp 0770 dhcp dhcp
     mkdir /data/misc/user 0771 root root
@@ -880,6 +881,7 @@ on boot
     chown system radio /sys/class/sec/sec_barcode_emul/barcode_ver_check
 
 # Permissions for Charging
+    chown media sdcard_rw /sys/class/power_supply/battery/store_mode
     chown system radio /sys/class/power_supply/battery/batt_reset_soc
     chown system radio /sys/class/power_supply/battery/update
     chown system radio /sys/class/power_supply/battery/factory_mode
@@ -1358,6 +1360,12 @@ service cs_service /system/bin/cs
     group system
     disabled
 
+# Kies
+    service mobex-daemon /system/bin/npsmobex
+    class main
+    user system
+    group system radio inet sdcard_r sdcard_rw media_rw shell
+
 # Sensor
 service sensorhubservice /system/bin/sensorhubservice
     class main
@@ -1394,5 +1402,3 @@ on property:persist.security.tlc.ccm=1
 on property:persist.security.tlc.tui=1
   start tui
   setprop persist.security.tlc.tui 0
-
-
