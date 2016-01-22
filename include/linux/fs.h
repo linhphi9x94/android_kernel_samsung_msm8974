@@ -10,7 +10,6 @@
 #include <linux/ioctl.h>
 #include <linux/blk_types.h>
 #include <linux/types.h>
-#include <linux/export.h>
 
 /*
  * It's silly to have NR_OPEN bigger than NR_FILE, but you can change
